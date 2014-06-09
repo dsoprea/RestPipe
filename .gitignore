@@ -1,0 +1,6 @@
+/bin/
+/lib/
+/include/
+/local/
+/.Python
+*.pyc

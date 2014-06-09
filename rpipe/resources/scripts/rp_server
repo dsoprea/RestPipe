@@ -1,0 +1,11 @@
+#!/usr/bin/env python2.7
+
+import sys
+import os.path
+dev_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+sys.path.insert(0, dev_path)
+
+import rpipe.config.log
+import rpipe.server
+
+rpipe.server.Server().run()

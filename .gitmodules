@@ -1,0 +1,3 @@
+[submodule "rpipe/resources/data/ssl"]
+	path = rpipe/resources/data/ssl
+	url = git@github.com:dsoprea/CaKit.git

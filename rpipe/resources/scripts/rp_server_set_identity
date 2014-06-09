@@ -1,0 +1,56 @@
+#!/usr/bin/env python2.7
+
+import sys
+import os.path
+dev_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+sys.path.insert(0, dev_path)
+
+import argparse
+import M2Crypto.RSA
+import M2Crypto.X509
+
+import rpipe.config.server
+
+parser = argparse.ArgumentParser(description='Load the RestPipe server keys/certificate.')
+
+parser.add_argument('private_key_pem', 
+                    help='Private-key filepath')
+parser.add_argument('certificate_pem', 
+                    help='Certificate filepath')
+parser.add_argument('ca_certificate_pem', 
+                    help='CA Certificate filepath (for client authentication)')
+
+args = parser.parse_args()
+
+## Process private-key.
+
+with open(args.private_key_pem) as f:
+    private_key_pem = f.read()
+
+    # Validate.
+    M2Crypto.RSA.load_key_string(private_key_pem)
+
+with open(rpipe.config.server.KEY_FILEPATH, 'w') as f:
+    f.write(private_key_pem)
+
+## Process certificate.
+
+with open(args.certificate_pem) as f:
+    certificate_pem = f.read()
+
+    # Validate.
+    M2Crypto.X509.load_cert_string(certificate_pem)
+
+with open(rpipe.config.server.CRT_FILEPATH, 'w') as f:
+    f.write(certificate_pem)
+
+## Process CA certificate.
+
+with open(args.ca_certificate_pem) as f:
+    ca_certificate_pem = f.read()
+
+    # Validate.
+    M2Crypto.X509.load_cert_string(ca_certificate_pem)
+
+with open(rpipe.config.server.CA_CRT_FILEPATH, 'w') as f:
+    f.write(ca_certificate_pem)
