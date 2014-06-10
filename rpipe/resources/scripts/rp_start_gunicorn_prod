@@ -1,0 +1,20 @@
+#!/usr/bin/env python2.7
+
+import sys
+import os.path
+dev_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+sys.path.insert(0, dev_path)
+
+import os.path
+import rpipe
+root_path = os.path.abspath(os.path.join(os.path.dirname(rpipe.__file__), '..'))
+
+import os
+os.chdir(root_path)
+
+import subprocess
+cmd = ['gunicorn', '-c', 'rpipe/resources/data/gunicorn.conf.prod', 'rpipe.wsgi:wsgi']
+p = subprocess.Popen(cmd)
+r = p.wait()
+if r != 0:
+    raise EnvironmentError("Gunicorn launch failed.")

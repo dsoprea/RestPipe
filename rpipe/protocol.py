@@ -133,3 +133,5 @@ def send_message_obj(ws, message_obj, **kwargs):
     _logger.debug("Sending [%s].", get_string_from_message_id(message_id))
 
     ws.write(data)
+
+    return message_id

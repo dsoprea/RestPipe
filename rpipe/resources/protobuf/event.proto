@@ -1,0 +1,10 @@
+package rpipe.event;
+
+message Event {
+    required string verb = 1;
+    required string noun = 2;
+    optional string data = 3;
+}
+
+message EventReply {
+}

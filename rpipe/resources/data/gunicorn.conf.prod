@@ -1,0 +1,16 @@
+import os.path
+
+user = 'www-data'
+group = 'www-data'
+
+debug = 'false'
+daemon = 'true'
+
+bind = 'unix:/tmp/rpipe.gunicorn.sock'
+
+# Until our packages become smaller (currently 161M), this is a safe value.
+timeout = 120
+
+_LOG_PATH = '/var/log'
+errorlog = os.path.join(_LOG_PATH, 'app_rpipe.log')
+loglevel = 'info'

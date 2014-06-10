@@ -16,7 +16,7 @@ import rpipe.protocols
 _logger = logging.getLogger(__name__)
 
 
-class ClientConnection(object):
+class _ClientConnection(object):
     def __init__(self):
         self.__ws = None
         self.__connected = False
@@ -54,6 +54,7 @@ class ClientConnection(object):
 
         self.__ws = rpipe.protocol.SocketWrapper(ss.makefile())
 
+        _logger.debug("Scheduling heartbeat.")
         self.__schedule_heartbeat()
 
     def close(self):
@@ -81,48 +82,69 @@ class ClientConnection(object):
     def __send_heartbeat(self):
         _logger.debug("Sending heartbeart.")
 
-        self.send_message(self.__heartbeat_msg)
+        try:
+            self.send_message(self.__heartbeat_msg)
+        except EOFError:
+            raise
+        except:
+# TODO(dustin): We might have some tolerance. Though it's an AssertionError,
+#               it might allow a momentary wait. We might not have to do 
+#               anything
+# TODO(dustin): We prefer this rather than a lock that might silently lock 
+#               everything up. However, we can avoid this problem by creating 
+#               an outbound queue, and a "send" gthread.
+            _logger.exception("Could not send heartbeat. The socket might be "
+                              "blocked by another gthread. Since this wasn't "
+                              "an EOFError (broken pipe), we'll just skip "
+                              "this heartbeat.")
+        else:
+            _logger.debug("Heart response received.")
 
         self.__schedule_heartbeat()
 
     def send_message(self, message_obj):
-        rpipe.protocol.send_message_obj(self.__ws, message_obj)
+        message_id = rpipe.protocol.send_message_obj(self.__ws, message_obj)
 
+# TODO(dustin): We need to make sure that we wait on just the heartbeat response.
         message = rpipe.protocol.read_message_from_file_object(self.__ws)
         (message_info, message_obj) = message
 
         return message_obj
 
-def connect_gen():
-    """A generator that returns connections. In a perfect world, there will 
-    only be one. However, there might be more if reconnections are required.
-    """
+    @property
+    def connected(self):
+        return self.__connected
 
-    attempts = 0
-    while 1:
-        try:
-            with ClientConnection() as c:
-                yield c
-        except rpipe.exceptions.RpClientReconnectException:
-            _logger.warn("We need to reconnect.")
+#def connect_gen():
+#    """A generator that returns connections. In a perfect world, there will 
+#    only be one. However, there might be more if reconnections are required.
+#    """
+#
+#    attempts = 0
+#    while 1:
+#        try:
+#            with _ClientConnection() as c:
+#                yield c
+#        except rpipe.exceptions.RpClientReconnectException:
+#            _logger.warn("We need to reconnect.")
+#
+#            if rpipe.config.client.MAX_CONNECT_ATTEMPTS > 0 and \
+#               attempts >= rpipe.config.client.MAX_CONNECT_ATTEMPTS:
+#                raise IOError("We exceeded our maximum connection attempts "
+#                              "(%d).", 
+#                              rpipe.config.client.MAX_CONNECT_ATTEMPTS)
+#
+#            _logger.info("Waiting (%d) seconds before reconnect (%d).",
+#                         rpipe.config.client.RECONNECT_DELAY_S,
+#                         attempts)
+#
+#            gevent.sleep(rpipe.config.client.RECONNECT_DELAY_S)
+#
+#            attempts += 1
+#            continue
 
-            if rpipe.config.client.MAX_CONNECT_ATTEMPTS > 0 and \
-               attempts >= rpipe.config.client.MAX_CONNECT_ATTEMPTS:
-                raise IOError("We exceeded our maximum connection attempts "
-                              "(%d).", 
-                              rpipe.config.client.MAX_CONNECT_ATTEMPTS)
 
-            _logger.info("Waiting (%d) seconds before reconnect (%d).",
-                         rpipe.config.client.RECONNECT_DELAY_S,
-                         attempts)
-
-            gevent.sleep(rpipe.config.client.RECONNECT_DELAY_S)
-
-            attempts += 1
-            continue
-
-
-class ClientManager(object):
+class _ClientManager(object):
     """Establish a connection, and recall it from one invocation to the next. 
     It will be reconnected as needed.
     """
@@ -136,9 +158,21 @@ class ClientManager(object):
 
     @property
     def connection(self):
+# TODO(dustin): As long as we can keep the EOFError's from interrupting the 
+#               process, this should keep us connected. We might have to wrap
+#               the read/write method in SocketWrapper to automatically connect 
+#               and retry if we get EOF.
         if self.__c is None or self.__c.connected is False:
+            _logger.debug("Establishing connection.")
             c = _ClientConnection()
             c.open()
             self.__c = c
+        else:
+            _logger.debug("Reusing connection.")
 
         return self.__c
+
+_cm = _ClientManager()
+
+def get_connection():
+    return _cm.connection

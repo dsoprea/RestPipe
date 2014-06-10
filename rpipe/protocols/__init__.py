@@ -1,11 +1,16 @@
 _MESSAGE_PACKAGE = 'rpipe.protocols'
 
-MT_HEARTBEAT = 1
-MT_HEARTBEAT_R = 128
+MT_HEARTBEAT = 0x01
+MT_EVENT     = 0x02
+
+MT_HEARTBEAT_R = 0x80
+MT_EVENT_R     = 0x81
 
 _MESSAGE_MAP = {
     MT_HEARTBEAT: 'heartbeat_pb2.Heartbeat',
     MT_HEARTBEAT_R: 'heartbeat_pb2.HeartbeatReply',
+    MT_EVENT: 'event_pb2.Event',
+    MT_EVENT_R: 'event_pb2.EventReply',
 }
 
 _MESSAGE_MAP_R = dict([(v, k) for (k, v) in _MESSAGE_MAP.items()])
