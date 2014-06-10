@@ -1,0 +1,5 @@
+M2Crypto==0.22.3
+gevent==1.0.1
+greenlet==0.4.2
+protobuf==2.5.0
+wsgiref==0.1.2
