@@ -1,0 +1,7 @@
+package rpipe.support;
+
+message Heartbeat {
+}
+
+message HeartbeatReply {
+}

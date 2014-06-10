@@ -10,14 +10,19 @@ import gevent.ssl
 
 import rpipe.config.client
 import rpipe.exceptions
+import rpipe.protocol
+import rpipe.protocols
 
 _logger = logging.getLogger(__name__)
 
 
 class ClientConnection(object):
     def __init__(self):
-        self.__ss = None
+        self.__ws = None
         self.__connected = False
+
+        self.__heartbeat_msg = rpipe.protocol.get_obj_from_type(
+                                rpipe.protocols.MT_HEARTBEAT)
 
     def __del__(self):
         if self.__connected is True:
@@ -36,21 +41,20 @@ class ClientConnection(object):
                     gevent.socket.AF_INET, 
                     gevent.socket.SOCK_STREAM)
 
+#        print("Socket:\n%s" % (dir(socket)))
+
         ss = gevent.ssl.wrap_socket(
                 socket,
                 keyfile=rpipe.config.client.KEY_FILEPATH,
                 certfile=rpipe.config.client.CRT_FILEPATH)
+
+#        print("SSL:\n%s" % (dir(ss)))
          
         ss.connect(binding)
 
-        self.__ss = ss
+        self.__ws = rpipe.protocol.SocketWrapper(ss.makefile())
 
         self.__schedule_heartbeat()
-
-    def __schedule_heartbeat(self):
-        gevent.spawn_later(
-            rpipe.config.client.HEARTBEAT_INTERVAL_S,
-            self.__send_heartbeat)
 
     def close(self):
         _logger.info("Closing connection.")
@@ -60,7 +64,7 @@ class ClientConnection(object):
 
         self.__connected = False
 # TODO(dustin): This might have a problem with a broken pipe.
-        self.__ss.close()
+        self.__ws.close()
 
     def __enter__(self):
         self.open()
@@ -69,26 +73,25 @@ class ClientConnection(object):
     def __exit__(self, type, value, traceback):
         self.close()
 
+    def __schedule_heartbeat(self):
+        gevent.spawn_later(
+            rpipe.config.client.HEARTBEAT_INTERVAL_S,
+            self.__send_heartbeat)
+
     def __send_heartbeat(self):
         _logger.debug("Sending heartbeart.")
 
-# TODO(dustin): Finish.
-# TODO(dustin): We need to spawn a heartbeat operation on a schedule. Use 
-#               Greenlet.start_later. Clear self.__connected if we're 
-#               disconnected.
-#        raise NotImplementedError()
+        self.send_message(self.__heartbeat_msg)
+
         self.__schedule_heartbeat()
 
-    def write(self, data):
-# TODO(dustin): We need to catch the broken-pipe exception, and translate to 
-#               rpipe.exceptions.RpClientReconnectException .
-        self.__ss.write(data)
+    def send_message(self, message_obj):
+        rpipe.protocol.send_message_obj(self.__ws, message_obj)
 
-    def read(self, count=rpipe.config.client.DEFAULT_READ_CHUNK_LENGTH):
-# TODO(dustin): If the return is empty (''), then we'll need to emit 
-#               rpipe.exceptions.RpClientReconnectException .
-        return self.__ss.read(count)
+        message = rpipe.protocol.read_message_from_file_object(self.__ws)
+        (message_info, message_obj) = message
 
+        return message_obj
 
 def connect_gen():
     """A generator that returns connections. In a perfect world, there will 
