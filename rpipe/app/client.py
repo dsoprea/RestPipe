@@ -1,6 +1,7 @@
 import logging
 
 import web
+import gevent
 
 import rpipe.config
 import rpipe.config.client_web
@@ -13,6 +14,11 @@ web.config.debug = rpipe.config.IS_DEBUG
 # Establish a connection to the server.
 rpipe.client.connection.get_connection()
 
+# Start the socket-server.
+c = rpipe.client.connection.get_connection()
+gevent.spawn(c.process_requests)
+
+# Establish the web-server object.
 app = web.application(
             rpipe.config.client_web.URLS, 
             globals(), 

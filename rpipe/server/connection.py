@@ -2,22 +2,20 @@
 
 import os.path
 import logging
-import traceback
 import time
 import socket
-import functools
 
 import gevent
 import gevent.server
 import gevent.ssl
 
 import rpipe.config.server
-import rpipe.exceptions
 import rpipe.server.exceptions
 import rpipe.utility
 import rpipe.protocol
-#import rpipe.message_catalog
 import rpipe.connection
+import rpipe.request_server
+import rpipe.message_loop
 
 _logger = logging.getLogger(__name__)
 
@@ -95,23 +93,6 @@ class ServerConnectionHandler(rpipe.connection.Connection):
 
 class DefaultServerConnectionHandler(ServerConnectionHandler):
     def __init__(self):
-#        mc = rpipe.message_catalog.get_catalog()
-#
-#        mc.register_type_handler(
-#            rpipe.protocols.MT_HEARTBEAT, 
-#            self.handle_heartbeat)
-#
-#        mc.register_type_handler(
-#            rpipe.protocols.MT_EVENT, 
-#            self.handle_event)
-#
-#        self.__mc = mc
-
-        event_handler_cls = rpipe.utility.load_cls_from_string(
-                                rpipe.config.server.EVENT_HANDLER_FQ_CLASS)
-
-        self.__eh = event_handler_cls(self)
-
         self.__ws = None
         self.__address = None
 
@@ -142,123 +123,17 @@ class DefaultServerConnectionHandler(ServerConnectionHandler):
         get_connection_catalog().deregister(self)
 
     def handle(self):
-        while 1:
-            _logger.debug("Waiting for message from client.")
-            
-            try:
-                message = rpipe.protocol.read_message_from_file_object(self.__ws)
-            except EOFError:
-                self.handle_close()
-                return
+        event_handler_cls = rpipe.utility.load_cls_from_string(
+                                rpipe.config.server.EVENT_HANDLER_FQ_CLASS)
 
-            (message_info, message_obj) = message
+        eh = event_handler_cls(self)
+        ctx = rpipe.message_loop.CONNECTION_CONTEXT_T(self.__address)
+        cml = rpipe.message_loop.CommonMessageLoop(self.__ws, eh, ctx)
 
-            message_type = rpipe.protocol.get_message_type_from_info(message_info)
-            message_id = rpipe.protocol.get_message_id_from_info(message_info)
-
-            if message_type == rpipe.protocols.MT_HEARTBEAT:
-                handler = self.__handle_heartbeat
-            elif message_type == rpipe.protocols.MT_EVENT:
-                handler = self.__handle_event
-            else:
-                _logger.warning("Received unhandled message (%d) [%s]. The "
-                                "lack of a reply will probably be a big "
-                                "problem, so we'll close the connection.", 
-                                message_type, message_obj.__class__.__name__)
-                return
-
-            gevent.spawn(handler, message_type, message_id, message_obj)
-#            self.__mc.hit(message_type, message_id, message_obj)
-
-    def __send_message_primitive(self, message_obj, **kwargs):
-        rpipe.protocol.send_message_obj(
-            self.__ws,
-            message_obj, 
-            **kwargs)
-
-# TODO(dustin): We should rename the corresponding methods in the client 
-#               respective to whether they'll be waiting on a response or not, 
-#               like these.
-    def send_response_message(self, message_obj, **kwargs):
-        self.__send_message_primitive(message_obj, **kwargs)
-
-    def initiate_message(self, message_obj, **kwargs):
-        self.__send_message_primitive(message_obj, **kwargs)
-        return self.__read_message()
-
-    def __read_message(self, **kwargs):
-# TODO(dustin): We're going to need to not interfere with replies in 
-#               unfinished dialogs.
-        rpipe.protocol.read_message_from_file_object(
-            self.__ws,
-            **kwargs)
-
-    def __handle_heartbeat(self, message_type, message_id, message_obj):
-        _logger.debug("Responding to heartbeat: %s", self.__address)
-
-        reply_message_obj = rpipe.protocol.get_obj_from_type(
-                                rpipe.protocols.MT_HEARTBEAT_R)
-
-        reply_message_obj.version = 1
-
-        self.send_response_message(
-            reply_message_obj, 
-            message_id=message_id, 
-            is_response=True)
-
-    def __handle_event(self, message_type, message_id, message_obj):
-        _logger.debug("Responding to event: %s", self.__address)
-
-        _logger.info("Received event [%s] [%s].", 
-                     message_obj.verb, message_obj.noun)
-
-        event_handler_name = message_obj.noun.replace('/', '_')
-
-        method = getattr(self.__eh, 'handle_' + event_handler_name)
-
-        handler = functools.partial(
-                    method, 
-                    message_id, 
-                    message_obj.verb, 
-                    message_obj.data)
-
-        gevent.spawn(handler,
-                     message_id,
-                     message_obj.verb,
-                     message_obj.noun,
-                     message_obj.data)
-
-    def process_event(self, message_id, verb, noun, data):
-        """Processes event in a new gthread."""
-
-        if self.__event_handler is not None:
-            _logger.debug("Forwarding event to event-handler.")
-
-            try:
-                result_data = self.__event_handler(verb, noun, data)
-            except rpipe.exceptions.RpHandleException as e:
-                result_data = traceback.format_exc()
-                code = e.code
-            else:
-                code = 0
-        else:
-            _logger.warn("No event-handler available. Responding as dumb "
-                         "success.")
-
-            result = ''
-            code = 0
-
-        reply_message_obj = rpipe.protocol.get_obj_from_type(
-                                rpipe.protocols.MT_EVENT_R)
-
-        reply_message_obj.version = 1
-        reply_message_obj.code = code
-        reply_message_obj.data = result
-
-        self.send_response_message(
-            reply_message_obj, 
-            message_id=message_id, 
-            is_response=True)
+        try:
+            cml.handle(exit_on_unknown=True)
+        finally:
+            self.handle_close()
 
     @property
     def socket(self):
@@ -273,7 +148,7 @@ class DefaultServerConnectionHandler(ServerConnectionHandler):
         return self.__address[0]
 
 
-class Server(object):
+class Server(rpipe.request_server.RequestServer):
     def __init__(self):
         fq_cls_name = rpipe.config.server.CONNECTION_HANDLER_FQ_CLASS
 
@@ -282,7 +157,7 @@ class Server(object):
 
         assert issubclass(self.__connection_handler_cls, ServerConnectionHandler)
 
-    def run(self):
+    def process_requests(self):
         binding = (rpipe.config.server.BIND_HOSTNAME, 
                    rpipe.config.server.BIND_PORT)
 
@@ -298,9 +173,11 @@ class Server(object):
                     certfile=rpipe.config.server.CRT_FILEPATH,
                     ca_certs=rpipe.config.server.CA_CRT_FILEPATH)
 
-        # Wait until termination. Since there is no cleanup and everything is 
-        # based on coroutines, default CTRL+BREAK and SIGTERM handling should 
-        # be fine.
+        # Wait until termination. Generally, we should already be running in 
+        # its own gthread. 
+        #
+        # Since there is no cleanup and everything is based on coroutines, 
+        # default CTRL+BREAK and SIGTERM handling should be fine.
         server.serve_forever()
 
 _cc = _ConnectionCatalog()

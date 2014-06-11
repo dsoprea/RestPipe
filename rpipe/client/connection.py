@@ -13,6 +13,8 @@ import rpipe.exceptions
 import rpipe.protocol
 import rpipe.protocols
 import rpipe.connection
+import rpipe.request_server
+import rpipe.message_loop
 
 _logger = logging.getLogger(__name__)
 
@@ -26,7 +28,9 @@ class DefaultClientEventHandler(object):
         return self.__client_connection_handler
 
 
-class _ClientConnectionHandler(rpipe.connection.Connection):
+class _ClientConnectionHandler(
+        rpipe.connection.Connection, 
+        rpipe.request_server.RequestServer):
     def __init__(self):
         self.__ws = None
         self.__connected = False
@@ -35,11 +39,6 @@ class _ClientConnectionHandler(rpipe.connection.Connection):
                                 rpipe.protocols.MT_HEARTBEAT)
 
         self.__heartbeat_msg.version = 1
-
-        event_handler_cls = rpipe.utility.load_cls_from_string(
-                                rpipe.config.client.EVENT_HANDLER_FQ_CLASS)
-
-        self.__eh = event_handler_cls(self)
 
     def __del__(self):
         if self.__connected is True:
@@ -73,8 +72,11 @@ class _ClientConnectionHandler(rpipe.connection.Connection):
         self.__ws = rpipe.protocol.SocketWrapper(ss.makefile())
         self.__connected = True
 
-        _logger.debug("Scheduling heartbeat.")
-        self.__schedule_heartbeat()
+# We can't read or write on the socket simultaneously. This will require some 
+# thought, and a heartbeat is redundant and unnecessary (except saving a second 
+# when we occasionally have to reconnect a broken pipe).
+#        _logger.debug("Scheduling heartbeat.")
+#        self.__schedule_heartbeat()
 
     def close(self):
         _logger.info("Closing connection.")
@@ -148,6 +150,16 @@ class _ClientConnectionHandler(rpipe.connection.Connection):
         (message_info, message_obj) = message
 
         return message_obj
+
+    def process_requests(self):
+        event_handler_cls = rpipe.utility.load_cls_from_string(
+                                rpipe.config.client.EVENT_HANDLER_FQ_CLASS)
+
+        eh = event_handler_cls(self)
+        ctx = rpipe.message_loop.CONNECTION_CONTEXT_T(None)
+        cml = rpipe.message_loop.CommonMessageLoop(self.__ws, eh, ctx)
+
+        cml.handle()
 
     @property
     def connected(self):
