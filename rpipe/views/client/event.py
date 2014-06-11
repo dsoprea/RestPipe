@@ -7,7 +7,7 @@ import rpipe.event
 _logger = logging.getLogger(__name__)
 
 
-class EventMainView(object):
+class EventClient(object):
     def handle(self, verb, noun):
         _logger.info("Received [%s] request: %s", verb, noun)
         return rpipe.event.emit(verb, noun, web.data())
@@ -26,4 +26,3 @@ class EventMainView(object):
 
     def PATCH(self, path):
         return self.handle('patch', path)
-
