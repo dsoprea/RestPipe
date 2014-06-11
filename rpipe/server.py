@@ -2,12 +2,14 @@
 
 import os.path
 import logging
+import traceback
 
 import gevent
 import gevent.server
 import gevent.ssl
 
 import rpipe.config.server
+import rpipe.exceptions
 import rpipe.utility
 import rpipe.protocol
 import rpipe.message_catalog
@@ -33,6 +35,15 @@ class DefaultConnectionHandler(ConnectionHandlerBaseClass):
             self.handle_event)
 
         self.__mc = mc
+
+        if rpipe.config.server.EVENT_HANDLER_FQ_CLASS is not None:
+            event_handler_cls = rpipe.utility.load_cls_from_string(
+                                    rpipe.config.server.\
+                                        EVENT_HANDLER_FQ_CLASS)
+        
+            self.__event_handler = event_handler_cls()
+        else:
+            self.__event_handler = None
 
     def new_connection(self, socket, address):
         """We've received a new connection."""
@@ -73,6 +84,8 @@ class DefaultConnectionHandler(ConnectionHandlerBaseClass):
         reply_message_obj = rpipe.protocol.get_obj_from_type(
                                 rpipe.protocols.MT_HEARTBEAT_R)
 
+        reply_message_obj.version = 1
+
         self.send_message(
             reply_message_obj, 
             message_id=message_id, 
@@ -83,28 +96,46 @@ class DefaultConnectionHandler(ConnectionHandlerBaseClass):
 
         (message_type, message_id) = message_meta
 
+        _logger.info("Received event [%s] [%s].", 
+                     message_obj.verb, message_obj.noun)
+
+        gevent.spawn(self.process_event,
+                     message_id,
+                     message_obj.verb,
+                     message_obj.noun,
+                     message_obj.data)
+
+    def process_event(self, message_id, verb, noun, data):
+        """Processes event in a new gthread."""
+
+        if self.__event_handler is not None:
+            _logger.debug("Forwarding event to event-handler.")
+
+            try:
+                result_data = self.__event_handler(verb, noun, data)
+            except rpipe.exceptions.RpHandleException as e:
+                result_data = traceback.format_exc()
+                code = e.code
+            else:
+                code = 0
+        else:
+            _logger.warn("No event-handler available. Responding as dumb "
+                         "success.")
+
+            result = ''
+            code = 0
+
         reply_message_obj = rpipe.protocol.get_obj_from_type(
                                 rpipe.protocols.MT_EVENT_R)
+
+        reply_message_obj.version = 1
+        reply_message_obj.code = code
+        reply_message_obj.data = result
 
         self.send_message(
             reply_message_obj, 
             message_id=message_id, 
             is_response=True)
-
-        _logger.info("Received event [%s] [%s].", 
-                     message_obj.verb, message_obj.noun)
-
-        gevent.spawn(self.process_event,
-                     message_obj.verb,
-                     message_obj.noun,
-                     message_obj.data)
-
-    def process_event(self, verb, noun, data):
-        """Processes event in a new gthread."""
-
-        print("Data:\n[%s]" % (data))
-
-        pass
 
     @property
     def socket(self):
@@ -117,9 +148,9 @@ class DefaultConnectionHandler(ConnectionHandlerBaseClass):
 
 class Server(object):
     def __init__(self):
-        fq_cls_name = rpipe.config.server.CONNECTION_HANDLER_CLASS
+        fq_cls_name = rpipe.config.server.CONNECTION_HANDLER_FQ_CLASS
 
-        self.__cls_connection_handler = rpipe.utility.load_cls_from_string(
+        self.__connection_handler_cls = rpipe.utility.load_cls_from_string(
                                             fq_cls_name)
 
     def run(self):
@@ -128,7 +159,7 @@ class Server(object):
 
         _logger.info("Running server: %s", binding)
 
-        handler = self.__cls_connection_handler()
+        handler = self.__connection_handler_cls()
 
         server = gevent.server.StreamServer(
                     binding, 

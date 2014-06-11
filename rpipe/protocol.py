@@ -124,6 +124,8 @@ def read_message_from_file_object(file_):
     else:
         serialized = ''
 
+    _logger.debug("Received data.")
+
     message_obj = unserialize(message_info, serialized)
 
     return (message_info, message_obj)
@@ -133,5 +135,7 @@ def send_message_obj(ws, message_obj, **kwargs):
     _logger.debug("Sending [%s].", get_string_from_message_id(message_id))
 
     ws.write(data)
+
+    _logger.debug("Message sent.")
 
     return message_id

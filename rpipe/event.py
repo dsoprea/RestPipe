@@ -11,6 +11,7 @@ def emit(verb, noun, data):
     print("Emitting [%s] [%s]: (%d) bytes" % (verb, noun, len(data)))
 
     message_obj = rpipe.protocol.get_obj_from_type(rpipe.protocols.MT_EVENT)
+    message_obj.version = 1
     message_obj.verb = verb
     message_obj.noun = noun
     message_obj.data = data

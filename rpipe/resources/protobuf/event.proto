@@ -1,10 +1,14 @@
 package rpipe.event;
 
 message Event {
-    required string verb = 1;
-    required string noun = 2;
-    optional string data = 3;
+    required uint32 version = 1;
+    required string verb = 2;
+    required string noun = 3;
+    optional string data = 4;
 }
 
 message EventReply {
+    required uint32 version = 1;
+    required uint32 code = 2;
+    required string data = 3;
 }

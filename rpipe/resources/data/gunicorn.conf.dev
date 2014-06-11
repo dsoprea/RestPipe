@@ -8,3 +8,4 @@ timeout = 120
 
 errorlog = '-'
 loglevel = 'debug'
+worker_class = 'gevent'

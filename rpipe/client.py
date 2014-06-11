@@ -24,6 +24,8 @@ class _ClientConnection(object):
         self.__heartbeat_msg = rpipe.protocol.get_obj_from_type(
                                 rpipe.protocols.MT_HEARTBEAT)
 
+        self.__heartbeat_msg.version = 1
+
     def __del__(self):
         if self.__connected is True:
             self.close()
@@ -75,6 +77,9 @@ class _ClientConnection(object):
         self.close()
 
     def __schedule_heartbeat(self):
+        _logger.debug("Scheduling heartbeat: (%d) seconds", 
+                      rpipe.config.client.HEARTBEAT_INTERVAL_S)
+
         gevent.spawn_later(
             rpipe.config.client.HEARTBEAT_INTERVAL_S,
             self.__send_heartbeat)

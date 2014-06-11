@@ -14,3 +14,4 @@ timeout = 120
 _LOG_PATH = '/var/log'
 errorlog = os.path.join(_LOG_PATH, 'app_rpipe.log')
 loglevel = 'info'
+worker_class = 'gevent'

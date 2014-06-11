@@ -13,7 +13,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='heartbeat.proto',
   package='rpipe.support',
-  serialized_pb='\n\x0fheartbeat.proto\x12\rrpipe.support\"\x0b\n\tHeartbeat\"\x10\n\x0eHeartbeatReply')
+  serialized_pb='\n\x0fheartbeat.proto\x12\rrpipe.support\"\x1c\n\tHeartbeat\x12\x0f\n\x07version\x18\x01 \x02(\r\"!\n\x0eHeartbeatReply\x12\x0f\n\x07version\x18\x01 \x02(\r')
 
 
 
@@ -25,6 +25,13 @@ _HEARTBEAT = _descriptor.Descriptor(
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
+    _descriptor.FieldDescriptor(
+      name='version', full_name='rpipe.support.Heartbeat.version', index=0,
+      number=1, type=13, cpp_type=3, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -35,7 +42,7 @@ _HEARTBEAT = _descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=34,
-  serialized_end=45,
+  serialized_end=62,
 )
 
 
@@ -46,6 +53,13 @@ _HEARTBEATREPLY = _descriptor.Descriptor(
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
+    _descriptor.FieldDescriptor(
+      name='version', full_name='rpipe.support.HeartbeatReply.version', index=0,
+      number=1, type=13, cpp_type=3, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -55,8 +69,8 @@ _HEARTBEATREPLY = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=47,
-  serialized_end=63,
+  serialized_start=64,
+  serialized_end=97,
 )
 
 DESCRIPTOR.message_types_by_name['Heartbeat'] = _HEARTBEAT

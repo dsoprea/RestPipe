@@ -1,7 +1,9 @@
 package rpipe.support;
 
 message Heartbeat {
+    required uint32 version = 1;
 }
 
 message HeartbeatReply {
+    required uint32 version = 1;
 }
