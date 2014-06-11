@@ -5,7 +5,15 @@ import os.path
 dev_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 sys.path.insert(0, dev_path)
 
-import rpipe.config.log
-import rpipe.server
+import gevent
 
-rpipe.server.Server().run()
+import rpipe.config.log
+import rpipe.server.connection
+
+s = rpipe.server.connection.Server()
+gevent.spawn(s.run)
+
+# TODO(dustin): Start web-server, here.
+
+while 1:
+    gevent.sleep(1)

@@ -21,13 +21,19 @@ CRT_FILEPATH = os.path.join(_CERT_PATH, _CRT_FILENAME)
 CA_CRT_FILEPATH = os.path.join(_CERT_PATH, _CA_CRT_FILENAME)
 
 DEFAULT_READ_CHUNK_LENGTH = 1024
-CONNECTION_HANDLER_FQ_CLASS = os.environ.get(
-                                'RP_CONNECTION_HANDLER_FQ_CLASS', 
-                                'rpipe.server.DefaultConnectionHandler')
+CONNECTION_HANDLER_FQ_CLASS = \
+    os.environ.get(
+        'RP_CONNECTION_HANDLER_FQ_CLASS', 
+        'rpipe.server.connection.DefaultServerConnectionHandler')
 
-EVENT_HANDLER_FQ_CLASS = os.environ.get(
-                            'RP_EVENT_HANDLER_FQ_CLASS',
-                            '') or None
+EVENT_HANDLER_FQ_CLASS = \
+    os.environ.get(
+        'RP_EVENT_HANDLER_FQ_CLASS',
+        'rpipe.server.connection.DefaultServerEventHandler')
+
+DEFAULT_CONNECTION_WAIT_TIMEOUT_S = 20
+
+CLIENT_HOSTNAME_RESOLVER_CLS = 'rpipe.server.hostname_resolver.HostnameResolverDns'
 
 # Install attributes on this module from the optional user-config.
 if USER_CONFIG_MODULE_NAME != '':

@@ -12,11 +12,21 @@ import rpipe.config.client
 import rpipe.exceptions
 import rpipe.protocol
 import rpipe.protocols
+import rpipe.connection
 
 _logger = logging.getLogger(__name__)
 
 
-class _ClientConnection(object):
+class DefaultClientEventHandler(object):
+    def __init__(self, client_connection_handler):
+        self.__client_connection_handler = client_connection_handler
+
+    @property
+    def cch(self):
+        return self.__client_connection_handler
+
+
+class _ClientConnectionHandler(rpipe.connection.Connection):
     def __init__(self):
         self.__ws = None
         self.__connected = False
@@ -25,6 +35,11 @@ class _ClientConnection(object):
                                 rpipe.protocols.MT_HEARTBEAT)
 
         self.__heartbeat_msg.version = 1
+
+        event_handler_cls = rpipe.utility.load_cls_from_string(
+                                rpipe.config.client.EVENT_HANDLER_FQ_CLASS)
+
+        self.__eh = event_handler_cls(self)
 
     def __del__(self):
         if self.__connected is True:
@@ -103,7 +118,7 @@ class _ClientConnection(object):
         _logger.debug("Sending heartbeart.")
 
         try:
-            self.send_message(self.__heartbeat_msg)
+            self.initiate_message(self.__heartbeat_msg)
         except EOFError:
             raise
         except:
@@ -122,8 +137,11 @@ class _ClientConnection(object):
 
         self.__schedule_heartbeat()
 
-    def send_message(self, message_obj):
-        message_id = rpipe.protocol.send_message_obj(self.__ws, message_obj)
+    def initiate_message(self, message_obj, **kwargs):
+        message_id = rpipe.protocol.send_message_obj(
+                        self.__ws, 
+                        message_obj, 
+                        **kwargs)
 
 # TODO(dustin): We need to make sure that we wait on just the heartbeat response.
         message = rpipe.protocol.read_message_from_file_object(self.__ws)
@@ -143,7 +161,7 @@ class _ClientConnection(object):
 #    attempts = 0
 #    while 1:
 #        try:
-#            with _ClientConnection() as c:
+#            with _ClientConnectionHandler() as c:
 #                yield c
 #        except rpipe.exceptions.RpClientReconnectException:
 #            _logger.warn("We need to reconnect.")
@@ -184,7 +202,7 @@ class _ClientManager(object):
 #               and retry if we get EOF.
         if self.__c is None or self.__c.connected is False:
             _logger.debug("Establishing connection.")
-            c = _ClientConnection()
+            c = _ClientConnectionHandler()
             c.open()
             self.__c = c
         else:

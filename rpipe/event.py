@@ -1,12 +1,14 @@
 import logging
 
-import rpipe.client
 import rpipe.protocols
 import rpipe.protocol
+import rpipe.connection
 
 _logger = logging.getLogger(__name__)
 
-def emit(verb, noun, data):
+def emit(c, verb, noun, data):
+    assert issubclass(c.__class__, rpipe.connection.Connection)
+
     _logger.info("Emitting [%s] [%s]: (%d) bytes", verb, noun, len(data))
     print("Emitting [%s] [%s]: (%d) bytes" % (verb, noun, len(data)))
 
@@ -16,7 +18,6 @@ def emit(verb, noun, data):
     message_obj.noun = noun
     message_obj.data = data
 
-    c = rpipe.client.get_connection()
-    r = c.send_message(message_obj)
+    r = c.initiate_message(message_obj)
 
     return ''

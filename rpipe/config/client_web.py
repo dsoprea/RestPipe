@@ -1,3 +1,3 @@
 URLS = (
-    '/(.*)$', 'rpipe.views.client.event.EventClient',
+    '/server/(.*)$', 'rpipe.views.client.event.EventClient',
 )

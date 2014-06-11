@@ -65,6 +65,17 @@ def get_obj_from_type(message_type):
 
     return message_cls()
 
+#def get_name_from_message_cls(message_cls):
+#    parts = []
+#    i = -1
+#    for c in message_cls.__name__:
+#        if c.isupper() or not parts:
+#            c = c.lower()
+#            parts.append('')
+#            i += 1
+#        parts[i] += c
+#    return '_'.join(parts)
+
 def serialize(message_obj, message_id=None, is_response=False, flags=0):
     if message_id is None:
         message_id = id_generator()

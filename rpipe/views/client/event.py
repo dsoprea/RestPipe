@@ -3,14 +3,18 @@ import functools
 import web
 
 import rpipe.event
+import rpipe.client.connection
 
 _logger = logging.getLogger(__name__)
 
 
 class EventClient(object):
     def handle(self, verb, noun):
-        _logger.info("Received [%s] request: %s", verb, noun)
-        return rpipe.event.emit(verb, noun, web.data())
+        _logger.info("Client received request, to be sent to server: [%s] "
+                     "[%s]", verb, noun)
+
+        c = rpipe.client.connection.get_connection()
+        return rpipe.event.emit(c, verb, noun, web.data())
 
     def GET(self, path):
         return self.handle('get', path)

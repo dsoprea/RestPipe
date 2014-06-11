@@ -23,6 +23,11 @@ HEARTBEAT_INTERVAL_S = 5
 MAX_CONNECT_ATTEMPTS = 0
 RECONNECT_DELAY_S = 5
 
+EVENT_HANDLER_FQ_CLASS = \
+    os.environ.get(
+        'RP_EVENT_HANDLER_FQ_CLASS',
+        'rpipe.client.connection.DefaultClientEventHandler')
+
 # Install attributes on this module from the optional user-config.
 if USER_CONFIG_MODULE_NAME != '':
     _MODULE = sys.modules[__name__]
