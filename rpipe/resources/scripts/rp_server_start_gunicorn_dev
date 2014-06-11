@@ -13,7 +13,7 @@ import os
 os.chdir(root_path)
 
 import subprocess
-cmd = ['gunicorn', '-c', 'rpipe/resources/data/gunicorn.conf.client.dev', 'rpipe.app.wsgi_client:wsgi']
+cmd = ['gunicorn', '-c', 'rpipe/resources/data/gunicorn.conf.server.dev', 'rpipe.app.wsgi_server:wsgi']
 p = subprocess.Popen(cmd)
 r = p.wait()
 if r != 0:
