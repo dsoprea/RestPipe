@@ -28,6 +28,7 @@ class _ClientConnection(object):
 
     def __del__(self):
         if self.__connected is True:
+            _logger.debug("Closing connection (__del__).")
             self.close()
 
     def open(self):
@@ -55,6 +56,7 @@ class _ClientConnection(object):
         ss.connect(binding)
 
         self.__ws = rpipe.protocol.SocketWrapper(ss.makefile())
+        self.__connected = True
 
         _logger.debug("Scheduling heartbeat.")
         self.__schedule_heartbeat()
@@ -66,23 +68,36 @@ class _ClientConnection(object):
             raise IOError("Client not connected.")
 
         self.__connected = False
-# TODO(dustin): This might have a problem with a broken pipe.
-        self.__ws.close()
+
+        try:
+            self.__ws.close()
+        except:
+            _logger.exception("Error while closing socket. Ignoring.")
 
     def __enter__(self):
         self.open()
         return self
 
     def __exit__(self, type, value, traceback):
+        _logger.debug("Closing connection (__exit__).")
         self.close()
 
     def __schedule_heartbeat(self):
         _logger.debug("Scheduling heartbeat: (%d) seconds", 
                       rpipe.config.client.HEARTBEAT_INTERVAL_S)
 
-        gevent.spawn_later(
-            rpipe.config.client.HEARTBEAT_INTERVAL_S,
-            self.__send_heartbeat)
+        g = gevent.spawn_later(
+                rpipe.config.client.HEARTBEAT_INTERVAL_S,
+                self.__send_heartbeat)
+
+        def heartbeat_die_cb(hb_g):
+            _logger.error("The heartbeat gthread exceptioned-out. Killing "
+                          "connection-handler gthread.")
+
+            self.close()
+            gevent.kill(gevent.getcurrent())
+
+        g.link_exception(heartbeat_die_cb)
 
     def __send_heartbeat(self):
         _logger.debug("Sending heartbeart.")
@@ -103,7 +118,7 @@ class _ClientConnection(object):
                               "an EOFError (broken pipe), we'll just skip "
                               "this heartbeat.")
         else:
-            _logger.debug("Heart response received.")
+            _logger.debug("Heartbeat response received.")
 
         self.__schedule_heartbeat()
 

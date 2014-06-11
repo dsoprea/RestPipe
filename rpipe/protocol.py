@@ -4,6 +4,8 @@ import time
 import hashlib
 import logging
 import base64
+import ssl
+import socket
 
 import rpipe.protocols
 import rpipe.utility
@@ -27,15 +29,30 @@ class SocketWrapper(object):
 # TODO(dustin): We need read/write callers to catch EOFError.
 
     def read(self, *args, **kwargs):
-        data = self.__s.read(*args, **kwargs)
+        try:
+            data = self.__s.read(*args, **kwargs)
+        except socket.error as e:
+            message = ("There was a socket error (read). Closing stream: %s" % (str(e)))
+            _logger.exception(message)
+            raise EOFError(message)
+
         if data == '':
             raise EOFError()
 
         return data
 
     def write(self, *args, **kwargs):
-        self.__s.write(*args, **kwargs)
-        self.__s.flush()
+        try:
+            self.__s.write(*args, **kwargs)
+            self.__s.flush()
+        except ssl.SSLError as e:
+            message = ("There was an SSL error (read). Closing stream: %s" % (str(e)))
+            _logger.exception(message)
+            raise EOFError(message)
+        except socket.error as e:
+            message = ("There was a socket error (write). Closing stream: %s" % (str(e)))
+            _logger.exception(message)
+            raise EOFError(message)
 
 def id_generator():
     """Generate IDs for composed messages."""
