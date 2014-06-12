@@ -4,3 +4,6 @@
 /local/
 /.Python
 *.pyc
+/build/
+/dist/
+/restpipe.egg-info/

@@ -25,8 +25,8 @@ setuptools.setup(
       install_requires=install_requires,
       package_data={
             'rpipe': ['resources/scripts/*', 
-                      'resources/data/*',
                       'resources/data/ssl/*',
+                      'resources/data/*',
                       'resources/protobuf/*'],
       },
       scripts=[
