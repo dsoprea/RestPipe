@@ -24,8 +24,6 @@ def connection_cycle():
             last_attempt = time.time()
             c = rpipe.client.connection.get_connection()
 
-# TODO(dustin): Make sure that we can tolerate non-connectivity from the very 
-#               beginning (and just reconnect when we can).
             # Start the local socket-server.
             c.process_requests()
         except rpipe.exceptions.RpConnectionRetry:
@@ -45,9 +43,9 @@ def connection_cycle():
                 gevent.sleep(wait_time_s)
 
 def client_socket_server_killed_cb(g):
-    _logger.error("The client socket-server is terminated. Stopping app.")
 # TODO(dustin): We need to signal the web-server to die, here.
 #    gevent.kill(main)
+    pass
 
 g = gevent.spawn(connection_cycle)
 g.link(client_socket_server_killed_cb)
