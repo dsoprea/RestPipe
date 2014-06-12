@@ -2,6 +2,7 @@ import logging
 import json
 import web
 
+import rpipe.config.web_server
 import rpipe.event
 import rpipe.client.connection
 
@@ -16,7 +17,8 @@ class EventClient(object):
         c = rpipe.client.connection.get_connection()
         (code, mimetype, data) = rpipe.event.emit(c, verb, noun, web.data())
 
-# TODO(dustin): How do we return a code without having to raise it?
+        web.header(rpipe.config.web_server.HEADER_EVENT_RETURN_CODE, code)
+
         if mimetype is not None:
             web.header('Content-Type', mimetype)
 
