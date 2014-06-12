@@ -1,5 +1,5 @@
 import logging
-import functools
+import json
 import web
 
 import rpipe.event
@@ -14,7 +14,13 @@ class EventClient(object):
                      "[%s]", verb, noun)
 
         c = rpipe.client.connection.get_connection()
-        return rpipe.event.emit(c, verb, noun, web.data())
+        (code, mimetype, data) = rpipe.event.emit(c, verb, noun, web.data())
+
+# TODO(dustin): How do we return a code without having to raise it?
+        if mimetype is not None:
+            web.header('Content-Type', mimetype)
+
+        return data
 
     def GET(self, path):
         return self.handle('get', path)

@@ -1,6 +1,7 @@
 import logging
 import collections
 import traceback
+import json
 
 import gevent
 
@@ -89,7 +90,8 @@ class CommonMessageLoop(object):
         rpipe.message_exchange.send(
             self.__ctx.client_address, 
             message_obj,
-            reply_to_message_id=reply_to_message_id)
+            reply_to_message_id=reply_to_message_id,
+            expect_response=False)
 
     def initiate_message(self, message_obj, **kwargs):
         message_id = rpipe.message_exchange.send(
@@ -123,6 +125,8 @@ class CommonMessageLoop(object):
         try:
             handler = getattr(self.__eh, 'handle_' + event_handler_name)
         except AttributeError:
+            _logger.warning("Event is not handled: [%s]", event_handler_name)
+
             self.__send_response(
                 message_id, 
                 rpipe.config.protocol.UNHANDLED_EVENT_DEFAULT_RESULT_CODE)
@@ -135,13 +139,19 @@ class CommonMessageLoop(object):
                 message_obj.noun,
                 message_obj.data)
 
-    def __send_response(self, reply_to_message_id, code, data=''):
+    def __send_response(self, reply_to_message_id, code, 
+                        mimetype='application/json', data={}):
         reply_message_obj = rpipe.protocol.get_obj_from_type(
                                 rpipe.protocols.MT_EVENT_R)
 
         reply_message_obj.version = 1
+        reply_message_obj.mimetype = mimetype
         reply_message_obj.code = code
-        reply_message_obj.data = data
+
+        if mimetype == 'application/json':
+            reply_message_obj.data = json.dumps(data)
+        else:
+            reply_message_obj.data = data
 
         self.send_response_message(
             reply_message_obj, 

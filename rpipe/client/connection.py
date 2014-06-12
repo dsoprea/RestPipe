@@ -105,23 +105,23 @@ class _ClientConnectionHandler(
         _logger.debug("Closing connection (__exit__).")
         self.close()
 
-    def __schedule_heartbeat(self):
-        _logger.debug("Scheduling heartbeat: (%d) seconds", 
-                      rpipe.config.client.HEARTBEAT_INTERVAL_S)
-
-        g = gevent.spawn_later(
-                rpipe.config.client.HEARTBEAT_INTERVAL_S,
-                self.__send_heartbeat)
-
-        def heartbeat_die_cb(hb_g):
-            _logger.error("The heartbeat gthread exceptioned-out. Killing "
-                          "connection-handler gthread.")
-
-            self.close()
-            gevent.kill(gevent.getcurrent())
-
-        g.link_exception(heartbeat_die_cb)
-
+#    def __schedule_heartbeat(self):
+#        _logger.debug("Scheduling heartbeat: (%d) seconds", 
+#                      rpipe.config.client.HEARTBEAT_INTERVAL_S)
+#
+#        g = gevent.spawn_later(
+#                rpipe.config.client.HEARTBEAT_INTERVAL_S,
+#                self.__send_heartbeat)
+#
+#        def heartbeat_die_cb(hb_g):
+#            _logger.error("The heartbeat gthread exceptioned-out. Killing "
+#                          "connection-handler gthread.")
+#
+#            self.close()
+#            gevent.kill(gevent.getcurrent())
+#
+#        g.link_exception(heartbeat_die_cb)
+#
 #    def __send_heartbeat(self):
 #        _logger.debug("Sending heartbeart.")
 #

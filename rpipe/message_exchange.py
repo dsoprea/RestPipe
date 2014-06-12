@@ -63,14 +63,15 @@ class _MessageExchange(object):
                     _logger.debug("This message was a reply: %s", 
                                   message_id_str)
 
-                    r[1] = message_obj
+                    r[1] = message
                     r[0].set()
 
                 is_active = True
 
             if self.__outgoing.empty() is False:
                 (message_id, message_obj) = self.__outgoing.get()
-                message_id_str = get_string_from_message_id(message_id)
+                message_id_str = rpipe.protocol.get_string_from_message_id(
+                                    message_id)
 
                 _logger.debug("Sending message: %s", message_id_str)
 
@@ -93,7 +94,7 @@ class _MessageExchange(object):
         _logger.warning("Message-exchange terminating for [%s].", 
                         self.__address)
 
-    def send(self, message_obj, reply_to_message_id=None, **kwargs):
+    def send(self, message_obj, reply_to_message_id=None, expect_response=True, **kwargs):
         if reply_to_message_id is None:
             message_id = rpipe.protocol.id_generator()
         else:
@@ -102,6 +103,7 @@ class _MessageExchange(object):
         self.__outgoing.put((message_id, message_obj))
 
         if expect_response is True:
+            # Add the tracking information to track the future reply.
             self.__replied[message_id] = [gevent.event.Event(), None]
 
         return message_id

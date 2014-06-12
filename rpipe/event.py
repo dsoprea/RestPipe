@@ -20,4 +20,4 @@ def emit(c, verb, noun, data):
 
     r = c.initiate_message(message_obj)
 
-    return ''
+    return (r.code, r.mimetype, r.data)
