@@ -41,7 +41,8 @@ class _ClientConnectionHandler(
 
         self.__heartbeat_msg.version = 1
 
-        self.__ctx = rpipe.message_loop.CONNECTION_CONTEXT_T(None)
+        self.__binding = (rpipe.config.client.TARGET_HOSTNAME, 
+                          rpipe.config.client.TARGET_PORT)
 
     def __del__(self):
         if self.__connected is True:
@@ -49,10 +50,7 @@ class _ClientConnectionHandler(
             self.close()
 
     def open(self):
-        binding = (rpipe.config.client.TARGET_HOSTNAME, 
-                   rpipe.config.client.TARGET_PORT)
-
-        _logger.info("Connecting to: %s", binding)
+        _logger.info("Connecting to: %s", self.__binding)
 
         if self.__connected is True:
             raise IOError("Client already connected.")
@@ -71,7 +69,7 @@ class _ClientConnectionHandler(
 #        print("SSL:\n%s" % (dir(ss)))
 
         try:
-            ss.connect(binding)
+            ss.connect(self.__binding)
         except gevent.socket.error:
             raise rpipe.exceptions.RpConnectionFail(str(gevent.socket.error))
 
@@ -146,18 +144,10 @@ class _ClientConnectionHandler(
 #        self.__schedule_heartbeat()
 
     def initiate_message(self, message_obj, **kwargs):
-        message_id = rpipe.message_exchange.send(
-                        self.__ctx.client_address, 
-                        message_obj, 
-                        expect_response=True)
-
-        message = rpipe.message_exchange.wait_on_reply(
-                    self.__ctx.client_address, 
-                    message_id)
-
-        (message_info, message_obj) = message
-
-        return message_obj
+        # This only works because the CommonMessageLoop has already been 
+        # started and has registered the other participant with the 
+        # MessageExchange.
+        return rpipe.message_exchange.send_and_receive(self.__binding, message_obj)
 
     def process_requests(self):
         try:
@@ -165,7 +155,8 @@ class _ClientConnectionHandler(
                                     rpipe.config.client.EVENT_HANDLER_FQ_CLASS)
 
             eh = event_handler_cls(self)
-            cml = rpipe.message_loop.CommonMessageLoop(self.__ws, eh, self.__ctx)
+            ctx = rpipe.message_loop.CONNECTION_CONTEXT_T(self.__binding)
+            cml = rpipe.message_loop.CommonMessageLoop(self.__ws, eh, ctx)
 
             cml.handle()
         finally:

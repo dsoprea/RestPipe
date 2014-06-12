@@ -2,6 +2,7 @@ import logging
 import functools
 import web
 
+import rpipe.config.web_server
 import rpipe.event
 import rpipe.server.connection
 import rpipe.utility
@@ -26,7 +27,7 @@ class EventServer(object):
 
         self.__resolver = hostname_resolver_cls()
 
-    def handle(self, hostname, verb, noun):
+    def handle(self, verb, hostname, noun):
         _logger.info("Server received request, to be sent to client [%s]: "
                      "[%s] [%s]", hostname, verb, noun)
 
@@ -38,25 +39,34 @@ class EventServer(object):
             _logger.exception("Could not resolve hostname: [%s]", 
                               hostname)
             raise web.HTTPError('500 Hostname resolution error')
+        else:
+            _logger.debug("Resolved client hostname [%s]: [%s]", hostname, ip)
 
         try:
             c = self.__cc.wait_for_connection(ip)
         except rpipe.server.connection.RpNoConnectionException:
             raise web.HTTPError('503 Client connection unavailable')            
 
-        return rpipe.event.emit(c, verb, noun, web.data())
+        (code, mimetype, data) = rpipe.event.emit(c, verb, noun, web.data())
 
-    def GET(self, path):
-        return self.handle('get', path)
+        web.header(rpipe.config.web_server.HEADER_EVENT_RETURN_CODE, code)
 
-    def POST(self, path):
-        return self.handle('post', path)
+        if mimetype is not None:
+            web.header('Content-Type', mimetype)
 
-    def PUT(self, path):
-        return self.handle('put', path)
+        return data
 
-    def DELETE(self, path):
-        return self.handle('delete', path)
+    def GET(self, *args):
+        return self.handle('get', *args)
 
-    def PATCH(self, path):
-        return self.handle('patch', path)
+    def POST(self, *args):
+        return self.handle('post', *args)
+
+    def PUT(self, *args):
+        return self.handle('put', *args)
+
+    def DELETE(self, *args):
+        return self.handle('delete', *args)
+
+    def PATCH(self, *args):
+        return self.handle('patch', *args)

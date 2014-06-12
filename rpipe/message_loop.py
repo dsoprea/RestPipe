@@ -16,7 +16,7 @@ _logger = logging.getLogger(__name__)
 
 CONNECTION_CONTEXT_T = collections.namedtuple(
                         'ConnectionContext', 
-                        ['client_address'])
+                        ['participant_address'])
 
 
 class CommonMessageLoop(object):
@@ -28,23 +28,20 @@ class CommonMessageLoop(object):
     def handle(self, exit_on_unknown=False):
         rpipe.message_exchange.start_exchange(
             self.__ws, 
-            self.__ctx.client_address)
+            self.__ctx.participant_address)
 
-        if self.__ctx.client_address is None:
-            _logger.debug("Starting loop for messages from server.")
-        else:
-            _logger.debug("Starting loop for messages from client: %s", 
-                          self.__ctx.client_address)
+        _logger.debug("Starting loop for messages from participant: %s", 
+                      self.__ctx.participant_address)
             
         while 1:
-            if rpipe.message_exchange.is_alive(self.__ctx.client_address) is False:
+            if rpipe.message_exchange.is_alive(self.__ctx.participant_address) is False:
                 _logger.warning("Message exchange has ended. Terminating "
                                 "message-loop.")
                 break
 
             try:
                 message = rpipe.message_exchange.read(
-                            self.__ctx.client_address, 
+                            self.__ctx.participant_address, 
                             timeout=rpipe.config.protocol.\
                                         MESSAGE_LOOP_READ_TIMEOUT_S)
             except gevent.queue.Empty:
@@ -81,43 +78,24 @@ class CommonMessageLoop(object):
 
             gevent.spawn(handler, message_id, message_obj)
 
-        rpipe.message_exchange.stop_exchange(self.__ctx.client_address)
-
-# TODO(dustin): We might isolate the send/receive methods into another class 
-#               that can be reused by the CML and the client-only logic (like
-#               sending heartbeats).
-    def send_response_message(self, message_obj, reply_to_message_id, **kwargs):
-        rpipe.message_exchange.send(
-            self.__ctx.client_address, 
-            message_obj,
-            reply_to_message_id=reply_to_message_id,
-            expect_response=False)
-
-    def initiate_message(self, message_obj, **kwargs):
-        message_id = rpipe.message_exchange.send(
-                        self.__ctx.client_address, 
-                        message_obj)
-
-        return rpipe.message_exchange.wait_on_reply(
-                    self.__ctx.client_address, 
-                    message_id)
+        rpipe.message_exchange.stop_exchange(self.__ctx.participant_address)
 
 #    def __handle_heartbeat(self, message_id, message_obj):
-#        _logger.debug("Responding to heartbeat: %s", self.__ctx.client_address)
+#        _logger.debug("Responding to heartbeat: %s", self.__ctx.participant_address)
 #
 #        reply_message_obj = rpipe.protocol.get_obj_from_type(
 #                                rpipe.protocols.MT_HEARTBEAT_R)#
 #
 #        reply_message_obj.version = 1
 #
-#        self.send_response_message(
+#        self.__send_response_message(
 #            reply_message_obj, 
 #            message_id=message_id, 
 #            is_response=True)
 
     def __handle_event(self, message_id, message_obj):
         _logger.info("Received event from [%s]: [%s] [%s]", 
-                     self.__ctx.client_address, message_obj.verb, 
+                     self.__ctx.participant_address, message_obj.verb, 
                      message_obj.noun)
 
         event_handler_name = message_obj.noun.replace('/', '_')
@@ -141,6 +119,13 @@ class CommonMessageLoop(object):
 
     def __send_response(self, reply_to_message_id, code, 
                         mimetype='application/json', data={}):
+        reply_to_message_id_str = rpipe.protocol.get_string_from_message_id(
+                                    reply_to_message_id)
+
+        _logger.debug("Responding to message [%s] with code [%s] (with data? "
+                      "[%s])", 
+                      reply_to_message_id_str, code, bool(data))
+
         reply_message_obj = rpipe.protocol.get_obj_from_type(
                                 rpipe.protocols.MT_EVENT_R)
 
@@ -153,9 +138,11 @@ class CommonMessageLoop(object):
         else:
             reply_message_obj.data = data
 
-        self.send_response_message(
-            reply_message_obj, 
-            reply_to_message_id=reply_to_message_id)
+        rpipe.message_exchange.send(
+            self.__ctx.participant_address, 
+            reply_message_obj,
+            reply_to_message_id=reply_to_message_id,
+            expect_response=False)
 
     def __process_event(self, handler, message_id, verb, noun, data):
         """Processes event in a new gthread."""

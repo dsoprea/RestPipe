@@ -24,17 +24,17 @@ class EventClient(object):
 
         return data
 
-    def GET(self, path):
-        return self.handle('get', path)
+    def GET(self, *args):
+        return self.handle('get', *args)
 
-    def POST(self, path):
-        return self.handle('post', path)
+    def POST(self, *args):
+        return self.handle('post', *args)
 
-    def PUT(self, path):
-        return self.handle('put', path)
+    def PUT(self, *args):
+        return self.handle('put', *args)
 
-    def DELETE(self, path):
-        return self.handle('delete', path)
+    def DELETE(self, *args):
+        return self.handle('delete', *args)
 
-    def PATCH(self, path):
-        return self.handle('patch', path)
+    def PATCH(self, *args):
+        return self.handle('patch', *args)

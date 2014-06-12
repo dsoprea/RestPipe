@@ -27,7 +27,7 @@ class _MessageExchange(object):
     def run(self):
         """Read incoming messages and write outgoing messages."""
 
-        _logger.info("Message exchange running for connection: [%s]", 
+        _logger.info("Message exchange running for connection: %s", 
                      self.__address)
 
         while 1:
@@ -151,3 +151,13 @@ def send(address, message_obj, **kwargs):
 
 def wait_on_reply(address, message_id, **kwargs):
     return _instances[address][1].wait_on_reply(message_id, **kwargs)
+
+def send_and_receive(address, message_obj):
+    """A convenience function to send a message and wait on a reply."""
+
+    message_id = send(address, message_obj, expect_response=True)
+    message = wait_on_reply(address, message_id)
+
+    (message_info, message_obj) = message
+
+    return message_obj

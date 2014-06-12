@@ -113,6 +113,7 @@ class DefaultServerConnectionHandler(ServerConnectionHandler):
 
         self.__ws = rpipe.protocol.SocketWrapper(socket.makefile())
         self.__address = address
+        self.__ctx = rpipe.message_loop.CONNECTION_CONTEXT_T(self.__address)
 
         get_connection_catalog().register(self)
 
@@ -127,13 +128,17 @@ class DefaultServerConnectionHandler(ServerConnectionHandler):
                                 rpipe.config.server.EVENT_HANDLER_FQ_CLASS)
 
         eh = event_handler_cls(self)
-        ctx = rpipe.message_loop.CONNECTION_CONTEXT_T(self.__address)
-        cml = rpipe.message_loop.CommonMessageLoop(self.__ws, eh, ctx)
+        cml = rpipe.message_loop.CommonMessageLoop(self.__ws, eh, self.__ctx)
 
         try:
             cml.handle(exit_on_unknown=True)
         finally:
             self.handle_close()
+
+    def initiate_message(self, message_obj, **kwargs):
+        # This only works because the CommonMessageLoop has already registered 
+        # the other participant with the MessageExchange.
+        return rpipe.message_exchange.send_and_receive(self.__address, message_obj)
 
     @property
     def socket(self):
