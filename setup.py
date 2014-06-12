@@ -11,7 +11,7 @@ with open('requirements.txt') as f:
 setuptools.setup(
       name='restpipe',
       version=rpipe.__version__,
-      description="An SSL-authenticated, durable, bidirectional, RESTful pipe that transports custom events.",
+      description="An SSL-authenticated, durable, bidirectional, RESTful, client-server pipe that transports custom events.",
       long_description=long_description,
       classifiers=[],
       keywords='gevent ssl socket rest event',
