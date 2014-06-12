@@ -2,6 +2,7 @@ import logging
 import collections
 import traceback
 import json
+import types
 
 import gevent
 
@@ -17,6 +18,8 @@ _logger = logging.getLogger(__name__)
 CONNECTION_CONTEXT_T = collections.namedtuple(
                         'ConnectionContext', 
                         ['participant_address'])
+
+_CT_JSON = 'application/json'
 
 
 class CommonMessageLoop(object):
@@ -124,8 +127,49 @@ class CommonMessageLoop(object):
                 message_obj.noun,
                 message_obj.data)
 
-    def __send_event_response(self, reply_to_message_id, code, 
-                              mimetype='application/json', data={}):
+    def __process_event(self, handler, message_id, verb, noun, data):
+        """Processes event in a new gthread."""
+
+        _logger.debug("Forwarding event to event-handler.")
+
+        try:
+            result = handler(self.__ctx, verb, noun, data)
+        except rpipe.exceptions.RpHandleException as e:
+            result = traceback.format_exc()
+            code = e.code
+        else:
+            code = 0
+
+        if issubclass(result.__class__, tuple) is True:
+            (mimetype, code, result_data) = result
+        else:
+            mimetype = None
+            result_data = result
+
+        if mimetype is None:
+            mimetype = _CT_JSON
+
+        _logger.debug("Event result for verb [%s] and noun [%s]: [%s] [%s] "
+                      "(%s)", verb, noun, mimetype, 
+                      result_data.__class__.__name__, code)
+
+        if result_data is None:
+            _logger.debug("Result data was None. Coalescing to empty.")
+            result_data = ''
+
+        if issubclass(result_data.__class__, 
+                      (basestring, types.GeneratorType)) is False:
+            if mimetype == _CT_JSON:
+                result_data = json.dumps(result_data)
+            else:
+                raise ValueError("Response to noun [%s] was invalid type and "
+                                 "we're not allowed to encode it to JSON: "
+                                 "[%s]" %
+                                 (noun, result_data.__class__.__name__))
+
+        self.__send_event_response(message_id, code, mimetype, result_data)
+
+    def __send_event_response(self, reply_to_message_id, code, mimetype, data):
         reply_to_message_id_str = rpipe.protocol.get_string_from_message_id(
                                     reply_to_message_id)
 
@@ -139,29 +183,10 @@ class CommonMessageLoop(object):
         reply_message_obj.version = 1
         reply_message_obj.mimetype = mimetype
         reply_message_obj.code = code
-
-        if mimetype == 'application/json':
-            reply_message_obj.data = json.dumps(data)
-        else:
-            reply_message_obj.data = data
+        reply_message_obj.data = data
 
         rpipe.message_exchange.send(
             self.__ctx.participant_address, 
             reply_message_obj,
             reply_to_message_id=reply_to_message_id,
             expect_response=False)
-
-    def __process_event(self, handler, message_id, verb, noun, data):
-        """Processes event in a new gthread."""
-
-        _logger.debug("Forwarding event to event-handler.")
-
-        try:
-            result_data = handler(self.__ctx, verb, noun, data)
-        except rpipe.exceptions.RpHandleException as e:
-            result_data = traceback.format_exc()
-            code = e.code
-        else:
-            code = 0
-
-        self.__send_event_response(message_id, code, result)
