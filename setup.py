@@ -17,7 +17,7 @@ setuptools.setup(
       keywords='gevent ssl socket rest event',
       author='Dustin Oprea',
       author_email='myselfasunder@gmail.com',
-      url='',
+      url='https://github.com/dsoprea/RestPipe',
       license='GPL 2',
       packages=['rpipe'],
       include_package_data=True,
