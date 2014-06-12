@@ -170,7 +170,7 @@ class _ClientManager(object):
 #               the read/write method in SocketWrapper to automatically connect 
 #               and retry if we get EOF.
         if self.__c is None or self.__c.connected is False:
-            _logger.debug("Establishing connection.")
+            _logger.info("Establishing new connection.")
             c = _ClientConnectionHandler()
             c.open()
             self.__c = c

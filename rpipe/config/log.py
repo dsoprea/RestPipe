@@ -3,13 +3,13 @@ import os
 
 logger = logging.getLogger()
 
-#is_debug = bool(int(os.environ.get('DEBUG', '0')))
-is_debug = True
+is_debug = bool(int(os.environ.get('DEBUG', '0')))
+#is_debug = True
 
 if is_debug is True:
     logger.setLevel(logging.DEBUG)
 else:
-    logger.setLevel(logging.WARN)
+    logger.setLevel(logging.INFO)
 
 ch = logging.StreamHandler()
 
