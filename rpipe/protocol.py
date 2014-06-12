@@ -1,11 +1,10 @@
 import struct
 import random
-import time
-import hashlib
 import logging
-import base64
-import ssl
-import socket
+import math
+
+import gevent.ssl
+import gevent.socket
 
 import rpipe.exceptions
 import rpipe.protocols
@@ -13,6 +12,10 @@ import rpipe.utility
 
 # Message flags.
 MF_IS_REPLY = 0x01
+
+_MESSAGE_ID_MAXIMUM = 2**32
+_MESSAGE_ID_MAX_ZEROES = int(math.ceil(math.log(_MESSAGE_ID_MAXIMUM, 10))) - 1
+_MESSAGE_ID_MINIMUM = int('1' + '0' * _MESSAGE_ID_MAX_ZEROES)
 
 _logger = logging.getLogger(__name__)
 
@@ -22,6 +25,8 @@ class SocketWrapper(object):
     """
 
     def __init__(self, s):
+        assert s is not None
+
         self.__s = s
 
     def __getattr__(self, name):
@@ -32,7 +37,7 @@ class SocketWrapper(object):
     def read(self, *args, **kwargs):
         try:
             data = self.__s.read(*args, **kwargs)
-        except socket.error as e:
+        except gevent.socket.error as e:
             message = ("There was a socket error (read). Closing stream: %s" % (str(e)))
             _logger.exception(message)
             raise rpipe.exceptions.RpConnectionClosed(message)
@@ -46,19 +51,20 @@ class SocketWrapper(object):
         try:
             self.__s.write(*args, **kwargs)
             self.__s.flush()
-        except ssl.SSLError as e:
+        except gevent.ssl.SSLError as e:
             message = ("There was an SSL error (read). Closing stream: %s" % (str(e)))
             _logger.exception(message)
             raise rpipe.exceptions.RpConnectionClosed(message)
-        except socket.error as e:
+        except gevent.socket.error as e:
             message = ("There was a socket error (write). Closing stream: %s" % (str(e)))
             _logger.exception(message)
             raise rpipe.exceptions.RpConnectionClosed(message)
 
 def id_generator():
-    """Generate IDs for composed messages."""
+    """Generate IDs for composed messages. They will all the the same length.
+    """
 
-    return random.randrange(1, 2**32)
+    return random.randrange(_MESSAGE_ID_MINIMUM, _MESSAGE_ID_MAXIMUM)
 
 def get_obj_from_type(message_type):
     fq_module_name = rpipe.protocols.get_fq_module_name_for_type(message_type)

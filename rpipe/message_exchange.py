@@ -34,7 +34,7 @@ class _MessageExchange(object):
             is_active = False
             r = gevent.select.select(
                     [self.__ws], [], [], 
-                    rpipe.config.exchange.READ_SELECT_TIMEOUT_S)
+                    0)
 
             if r[0]:
                 _logger.debug("Reading message.")
@@ -86,7 +86,7 @@ class _MessageExchange(object):
                 is_active = True
 
             if is_active is False:
-                gevent.sleep(1)
+                gevent.sleep(rpipe.config.exchange.IDLE_TIMEOUT_S)
 
         # The other gthreads can determine that we've existed by checking our 
         # state.
@@ -134,6 +134,8 @@ def stop_exchange(address):
     del _instances[address]
 
 def start_exchange(ws, address):
+    assert ws is not None
+
     me = _MessageExchange(ws, address)
     g = gevent.spawn(me.run)
     _instances[address] = (g, me)

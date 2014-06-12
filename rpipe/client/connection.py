@@ -79,7 +79,7 @@ class _ClientConnectionHandler(
         _logger.info("Closing connection.")
 
         if self.__connected is False:
-            raise IOError("Client not connected.")
+            raise rpipe.exceptions.RpConnectionClosed("Client no longer connected.")
 
         self.__connected = False
 
@@ -128,6 +128,9 @@ class _ClientConnectionHandler(
         return rpipe.message_exchange.send_and_receive(self.__binding, message_obj)
 
     def process_requests(self):
+        assert self.__ws is not None
+        assert self.__connected is True
+
         try:
             event_handler_cls = rpipe.utility.load_cls_from_string(
                                     rpipe.config.client.EVENT_HANDLER_FQ_CLASS)

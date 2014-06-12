@@ -21,6 +21,8 @@ CONNECTION_CONTEXT_T = collections.namedtuple(
 
 class CommonMessageLoop(object):
     def __init__(self, wrapped_socket, event_handler, connection_context):
+        assert wrapped_socket is not None
+
         self.__ws = wrapped_socket
         self.__eh = event_handler
         self.__ctx = connection_context
