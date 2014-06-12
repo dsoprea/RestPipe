@@ -24,6 +24,14 @@ class CommonMessageLoop(object):
         self.__ws = wrapped_socket
         self.__eh = event_handler
         self.__ctx = connection_context
+        
+        heartbeat_reply_message_obj = \
+            rpipe.protocol.get_obj_from_type(
+                rpipe.protocols.MT_HEARTBEAT_R)#
+
+        heartbeat_reply_message_obj.version = 1
+
+        self.__heartbeat_reply_message_obj = heartbeat_reply_message_obj
 
     def handle(self, exit_on_unknown=False):
         rpipe.message_exchange.start_exchange(
@@ -80,18 +88,15 @@ class CommonMessageLoop(object):
 
         rpipe.message_exchange.stop_exchange(self.__ctx.participant_address)
 
-#    def __handle_heartbeat(self, message_id, message_obj):
-#        _logger.debug("Responding to heartbeat: %s", self.__ctx.participant_address)
-#
-#        reply_message_obj = rpipe.protocol.get_obj_from_type(
-#                                rpipe.protocols.MT_HEARTBEAT_R)#
-#
-#        reply_message_obj.version = 1
-#
-#        self.__send_response_message(
-#            reply_message_obj, 
-#            message_id=message_id, 
-#            is_response=True)
+    def __handle_heartbeat(self, message_id, message_obj):
+        _logger.debug("Responding to heartbeat: %s", 
+                      self.__ctx.participant_address)
+
+        rpipe.message_exchange.send(
+            self.__ctx.participant_address, 
+            self.__heartbeat_reply_message_obj,
+            reply_to_message_id=message_id,
+            expect_response=False)
 
     def __handle_event(self, message_id, message_obj):
         _logger.info("Received event from [%s]: [%s] [%s]", 
@@ -105,7 +110,7 @@ class CommonMessageLoop(object):
         except AttributeError:
             _logger.warning("Event is not handled: [%s]", event_handler_name)
 
-            self.__send_response(
+            self.__send_event_response(
                 message_id, 
                 rpipe.config.protocol.UNHANDLED_EVENT_DEFAULT_RESULT_CODE)
         else:
@@ -117,8 +122,8 @@ class CommonMessageLoop(object):
                 message_obj.noun,
                 message_obj.data)
 
-    def __send_response(self, reply_to_message_id, code, 
-                        mimetype='application/json', data={}):
+    def __send_event_response(self, reply_to_message_id, code, 
+                              mimetype='application/json', data={}):
         reply_to_message_id_str = rpipe.protocol.get_string_from_message_id(
                                     reply_to_message_id)
 
@@ -157,4 +162,4 @@ class CommonMessageLoop(object):
         else:
             code = 0
 
-        self.__send_response(message_id, code, result)
+        self.__send_event_response(message_id, code, result)
