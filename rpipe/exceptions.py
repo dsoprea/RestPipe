@@ -22,3 +22,13 @@ class RpHandleException(RpException):
 class RpHandleError(RpHandleException):
     def __init__(self, code=255, *args, **kwargs):
         super(RpHandleError, self).__init__(code, *args, **kwargs)
+
+
+class RpConnectionRetry(RpException):
+    pass
+
+class RpConnectionFail(RpConnectionRetry):
+    pass
+
+class RpConnectionClosed(RpConnectionRetry):
+    pass

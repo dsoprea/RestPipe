@@ -7,6 +7,7 @@ import base64
 import ssl
 import socket
 
+import rpipe.exceptions
 import rpipe.protocols
 import rpipe.utility
 
@@ -34,10 +35,10 @@ class SocketWrapper(object):
         except socket.error as e:
             message = ("There was a socket error (read). Closing stream: %s" % (str(e)))
             _logger.exception(message)
-            raise EOFError(message)
+            raise rpipe.exceptions.RpConnectionClosed(message)
 
         if data == '':
-            raise EOFError()
+            raise rpipe.exceptions.RpConnectionClosed()
 
         return data
 
@@ -48,11 +49,11 @@ class SocketWrapper(object):
         except ssl.SSLError as e:
             message = ("There was an SSL error (read). Closing stream: %s" % (str(e)))
             _logger.exception(message)
-            raise EOFError(message)
+            raise rpipe.exceptions.RpConnectionClosed(message)
         except socket.error as e:
             message = ("There was a socket error (write). Closing stream: %s" % (str(e)))
             _logger.exception(message)
-            raise EOFError(message)
+            raise rpipe.exceptions.RpConnectionClosed(message)
 
 def id_generator():
     """Generate IDs for composed messages."""
@@ -76,7 +77,7 @@ def get_obj_from_type(message_type):
 #        parts[i] += c
 #    return '_'.join(parts)
 
-def serialize(message_obj, message_id=None, is_response=False, flags=0):
+def _serialize(message_obj, message_id=None, is_response=False, flags=0):
     if message_id is None:
         message_id = id_generator()
 
@@ -86,7 +87,12 @@ def serialize(message_obj, message_id=None, is_response=False, flags=0):
     message_type = rpipe.protocols.get_type_from_obj(message_obj)
     serialized = message_obj.SerializeToString()
 
-    header = struct.pack('!BBII', message_type, flags, len(serialized), message_id)
+    header = struct.pack(
+                '!BBII', 
+                message_type, 
+                flags, 
+                len(serialized), 
+                message_id)
 
     whole_message = header + serialized
     _logger.debug("Serializing [%s]: (%d) + (%d)", 
@@ -119,7 +125,7 @@ def get_message_id_from_info(message_info):
 def get_message_type_from_info(message_info):
     return message_info['type']
 
-def unserialize(message_info, data):
+def _unserialize(message_info, data):
     message_obj = get_obj_from_type(message_info['type'])
     message_obj.ParseFromString(data)
 
@@ -154,12 +160,12 @@ def read_message_from_file_object(file_):
 
     _logger.debug("Received data.")
 
-    message_obj = unserialize(message_info, serialized)
+    message_obj = _unserialize(message_info, serialized)
 
     return (message_info, message_obj)
 
 def send_message_obj(ws, message_obj, **kwargs):
-    (data, message_id) = serialize(message_obj, **kwargs)
+    (data, message_id) = _serialize(message_obj, **kwargs)
     _logger.debug("Sending [%s].", get_string_from_message_id(message_id))
 
     ws.write(data)

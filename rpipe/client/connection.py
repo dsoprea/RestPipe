@@ -15,6 +15,7 @@ import rpipe.protocols
 import rpipe.connection
 import rpipe.request_server
 import rpipe.message_loop
+import rpipe.message_exchange
 
 _logger = logging.getLogger(__name__)
 
@@ -39,6 +40,8 @@ class _ClientConnectionHandler(
                                 rpipe.protocols.MT_HEARTBEAT)
 
         self.__heartbeat_msg.version = 1
+
+        self.__ctx = rpipe.message_loop.CONNECTION_CONTEXT_T(None)
 
     def __del__(self):
         if self.__connected is True:
@@ -66,8 +69,11 @@ class _ClientConnectionHandler(
                 certfile=rpipe.config.client.CRT_FILEPATH)
 
 #        print("SSL:\n%s" % (dir(ss)))
-         
-        ss.connect(binding)
+
+        try:
+            ss.connect(binding)
+        except gevent.socket.error:
+            raise rpipe.exceptions.RpConnectionFail(str(gevent.socket.error))
 
         self.__ws = rpipe.protocol.SocketWrapper(ss.makefile())
         self.__connected = True
@@ -116,50 +122,57 @@ class _ClientConnectionHandler(
 
         g.link_exception(heartbeat_die_cb)
 
-    def __send_heartbeat(self):
-        _logger.debug("Sending heartbeart.")
-
-        try:
-            self.initiate_message(self.__heartbeat_msg)
-        except EOFError:
-            raise
-        except:
-# TODO(dustin): We might have some tolerance. Though it's an AssertionError,
-#               it might allow a momentary wait. We might not have to do 
-#               anything
-# TODO(dustin): We prefer this rather than a lock that might silently lock 
-#               everything up. However, we can avoid this problem by creating 
-#               an outbound queue, and a "send" gthread.
-            _logger.exception("Could not send heartbeat. The socket might be "
-                              "blocked by another gthread. Since this wasn't "
-                              "an EOFError (broken pipe), we'll just skip "
-                              "this heartbeat.")
-        else:
-            _logger.debug("Heartbeat response received.")
-
-        self.__schedule_heartbeat()
+#    def __send_heartbeat(self):
+#        _logger.debug("Sending heartbeart.")
+#
+#        try:
+#            self.initiate_message(self.__heartbeat_msg)
+#        except EOFError:
+#            raise
+#        except:
+## TODO(dustin): We might have some tolerance. Though it's an AssertionError,
+##               it might allow a momentary wait. We might not have to do 
+##               anything
+## TODO(dustin): We prefer this rather than a lock that might silently lock 
+##               everything up. However, we can avoid this problem by creating 
+##               an outbound queue, and a "send" gthread.
+#            _logger.exception("Could not send heartbeat. The socket might be "
+#                              "blocked by another gthread. Since this wasn't "
+#                              "an EOFError (broken pipe), we'll just skip "
+#                              "this heartbeat.")
+#        else:
+#            _logger.debug("Heartbeat response received.")
+#
+#        self.__schedule_heartbeat()
 
     def initiate_message(self, message_obj, **kwargs):
-        message_id = rpipe.protocol.send_message_obj(
-                        self.__ws, 
+        message_id = rpipe.message_exchange.send(
+                        self.__ctx.client_address, 
                         message_obj, 
-                        **kwargs)
+                        expect_response=True)
 
-# TODO(dustin): We need to make sure that we wait on just the heartbeat response.
-        message = rpipe.protocol.read_message_from_file_object(self.__ws)
+        message = rpipe.message_exchange.wait_on_reply(
+                    self.__ctx.client_address, 
+                    message_id)
+
         (message_info, message_obj) = message
 
         return message_obj
 
     def process_requests(self):
-        event_handler_cls = rpipe.utility.load_cls_from_string(
-                                rpipe.config.client.EVENT_HANDLER_FQ_CLASS)
+        try:
+            event_handler_cls = rpipe.utility.load_cls_from_string(
+                                    rpipe.config.client.EVENT_HANDLER_FQ_CLASS)
 
-        eh = event_handler_cls(self)
-        ctx = rpipe.message_loop.CONNECTION_CONTEXT_T(None)
-        cml = rpipe.message_loop.CommonMessageLoop(self.__ws, eh, ctx)
+            eh = event_handler_cls(self)
+            cml = rpipe.message_loop.CommonMessageLoop(self.__ws, eh, self.__ctx)
 
-        cml.handle()
+            cml.handle()
+        finally:
+            # The message-loop has terminated (either purposely or via 
+            # exception). Make sure we close the connection (thereby 
+            # disqualifying it for reuse).
+            self.close()
 
     @property
     def connected(self):
