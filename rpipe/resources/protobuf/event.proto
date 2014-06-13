@@ -4,7 +4,8 @@ message Event {
     required uint32 version = 1;
     required string verb = 2;
     required string noun = 3;
-    optional string data = 4;
+    optional string mimetype = 4;
+    optional string data = 5;
 }
 
 message EventReply {

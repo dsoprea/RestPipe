@@ -4,6 +4,7 @@ import traceback
 import json
 import types
 
+import web
 import gevent
 
 import rpipe.config.protocol
@@ -108,12 +109,26 @@ class CommonMessageLoop(object):
                      self.__ctx.participant_address, message_obj.verb, 
                      message_obj.noun)
 
-        event_handler_name = message_obj.noun.replace('/', '_')
+        url_parts = message_obj.noun.split('//')
+
+        noun = url_parts[0]
+        if len(url_parts) > 1:
+            parameters = url_parts[1].split('/')
+        else:
+            parameters = []
+
+        handler_parts = [
+            message_obj.verb.lower(),
+            noun.replace('/', '_'),
+        ]
+        
+        event_handler_name = '_'.join(handler_parts)
 
         try:
-            handler = getattr(self.__eh, 'handle_' + event_handler_name)
+            handler = getattr(self.__eh, event_handler_name)
         except AttributeError:
-            _logger.warning("Event is not handled: [%s]", event_handler_name)
+            _logger.warning("Event is not handled: METHOD=[%s]", 
+                            event_handler_name)
 
             self.__send_event_response(
                 message_id, 
@@ -123,17 +138,23 @@ class CommonMessageLoop(object):
                 self.__process_event,
                 handler,
                 message_id,
-                message_obj.verb,
-                message_obj.noun,
+                parameters,
+                message_obj.mimetype,
                 message_obj.data)
 
-    def __process_event(self, handler, message_id, verb, noun, data):
+    def __process_event(self, handler, message_id, parameters, mimetype, data):
         """Processes event in a new gthread."""
 
-        _logger.debug("Forwarding event to event-handler.")
+        _logger.debug("Forwarding event to event-handler. MIMETYPE=[%s] "
+                      "PARAMS=%s", mimetype, parameters)
+
+        # We shouldn't even receive data within a GET.
+        if mimetype == _CT_JSON and data:
+            _logger.debug("Decoding JSON data.")
+            data = json.loads(data)
 
         try:
-            result = handler(self.__ctx, verb, noun, data)
+            result = handler(self.__ctx, (mimetype, data), *parameters)
         except rpipe.exceptions.RpHandleException as e:
             result = traceback.format_exc()
             code = e.code
@@ -149,8 +170,8 @@ class CommonMessageLoop(object):
         if mimetype is None:
             mimetype = _CT_JSON
 
-        _logger.debug("Event result for verb [%s] and noun [%s]: [%s] [%s] "
-                      "(%s)", verb, noun, mimetype, 
+        _logger.debug("Event result for handler [%s]: [%s] [%s] (%s)", 
+                      handler.func_name, mimetype, 
                       result_data.__class__.__name__, code)
 
         if result_data is None:
@@ -169,7 +190,8 @@ class CommonMessageLoop(object):
 
         self.__send_event_response(message_id, code, mimetype, result_data)
 
-    def __send_event_response(self, reply_to_message_id, code, mimetype, data):
+    def __send_event_response(self, reply_to_message_id, code, 
+                              mimetype='text/plain', data=''):
         reply_to_message_id_str = rpipe.protocol.get_string_from_message_id(
                                     reply_to_message_id)
 

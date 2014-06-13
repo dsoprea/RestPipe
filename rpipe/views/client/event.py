@@ -15,7 +15,10 @@ class EventClient(object):
                      "[%s]", verb, noun)
 
         c = rpipe.client.connection.get_connection()
-        (code, mimetype, data) = rpipe.event.emit(c, verb, noun, web.data())
+        mimetype = web.ctx.env.get('CONTENT_TYPE')
+
+        r = rpipe.event.emit(c, verb, noun, web.data(), mimetype)
+        (code, mimetype, data) = r
 
         web.header(rpipe.config.web_server.HEADER_EVENT_RETURN_CODE, code)
 

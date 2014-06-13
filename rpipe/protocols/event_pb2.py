@@ -13,7 +13,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='event.proto',
   package='rpipe.event',
-  serialized_pb='\n\x0b\x65vent.proto\x12\x0brpipe.event\"B\n\x05\x45vent\x12\x0f\n\x07version\x18\x01 \x02(\r\x12\x0c\n\x04verb\x18\x02 \x02(\t\x12\x0c\n\x04noun\x18\x03 \x02(\t\x12\x0c\n\x04\x64\x61ta\x18\x04 \x01(\t\"K\n\nEventReply\x12\x0f\n\x07version\x18\x01 \x02(\r\x12\x10\n\x08mimetype\x18\x02 \x01(\t\x12\x0c\n\x04\x63ode\x18\x03 \x02(\r\x12\x0c\n\x04\x64\x61ta\x18\x04 \x02(\t')
+  serialized_pb='\n\x0b\x65vent.proto\x12\x0brpipe.event\"T\n\x05\x45vent\x12\x0f\n\x07version\x18\x01 \x02(\r\x12\x0c\n\x04verb\x18\x02 \x02(\t\x12\x0c\n\x04noun\x18\x03 \x02(\t\x12\x10\n\x08mimetype\x18\x04 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x05 \x01(\t\"K\n\nEventReply\x12\x0f\n\x07version\x18\x01 \x02(\r\x12\x10\n\x08mimetype\x18\x02 \x01(\t\x12\x0c\n\x04\x63ode\x18\x03 \x02(\r\x12\x0c\n\x04\x64\x61ta\x18\x04 \x02(\t')
 
 
 
@@ -47,8 +47,15 @@ _EVENT = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='data', full_name='rpipe.event.Event.data', index=3,
+      name='mimetype', full_name='rpipe.event.Event.mimetype', index=3,
       number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='data', full_name='rpipe.event.Event.data', index=4,
+      number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -63,7 +70,7 @@ _EVENT = _descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=28,
-  serialized_end=94,
+  serialized_end=112,
 )
 
 
@@ -111,8 +118,8 @@ _EVENTREPLY = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=96,
-  serialized_end=171,
+  serialized_start=114,
+  serialized_end=189,
 )
 
 DESCRIPTOR.message_types_by_name['Event'] = _EVENT

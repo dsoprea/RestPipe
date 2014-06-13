@@ -1,5 +1,6 @@
 import logging
 import functools
+
 import web
 
 import rpipe.config.web_server
@@ -47,7 +48,10 @@ class EventServer(object):
         except rpipe.server.connection.RpNoConnectionException:
             raise web.HTTPError('503 Client connection unavailable')            
 
-        (code, mimetype, data) = rpipe.event.emit(c, verb, noun, web.data())
+        mimetype = web.ctx.env.get('CONTENT_TYPE')
+
+        r = rpipe.event.emit(c, verb, noun, web.data(), mimetype)
+        (code, mimetype, data) = r
 
         web.header(rpipe.config.web_server.HEADER_EVENT_RETURN_CODE, code)
 
