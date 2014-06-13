@@ -134,8 +134,7 @@ class CommonMessageLoop(object):
                 message_id, 
                 rpipe.config.protocol.UNHANDLED_EVENT_DEFAULT_RESULT_CODE)
         else:
-            gevent.spawn(
-                self.__process_event,
+            self.__process_event(
                 handler,
                 message_id,
                 parameters,
@@ -153,13 +152,36 @@ class CommonMessageLoop(object):
             _logger.debug("Decoding JSON data.")
             data = json.loads(data)
 
+        code = 0
+
         try:
             result = handler(self.__ctx, (mimetype, data), *parameters)
         except rpipe.exceptions.RpHandleException as e:
-            result = traceback.format_exc()
+            _logger.exception("Handled exception during event: %s", 
+                              e.__class__.__name__)
+
+            result = { 
+                'exception': {
+                    'text': traceback.format_exc(),
+                    'type': 'managed',
+                    'class': e.__class__.__name__,
+                }
+            }
+
             code = e.code
-        else:
-            code = 0
+        except Exception as e:
+            _logger.exception("Unhandled exception during event: %s", 
+                              e.__class__.__name__)
+
+            result = { 
+                'exception': {
+                    'text': traceback.format_exc(),
+                    'type': 'uncaught',
+                    'class': e.__class__.__name__,
+                }
+            }
+
+            code = rpipe.config.exchange.UNHANDLED_EXCEPTION_CODE
 
         if issubclass(result.__class__, tuple) is True:
             (mimetype, code, result_data) = result

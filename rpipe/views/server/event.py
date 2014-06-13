@@ -4,6 +4,7 @@ import functools
 import web
 
 import rpipe.config.web_server
+import rpipe.server.exceptions
 import rpipe.event
 import rpipe.server.connection
 import rpipe.utility
@@ -45,7 +46,7 @@ class EventServer(object):
 
         try:
             c = self.__cc.wait_for_connection(ip)
-        except rpipe.server.connection.RpNoConnectionException:
+        except rpipe.server.exceptions.RpNoConnectionException:
             raise web.HTTPError('503 Client connection unavailable')            
 
         mimetype = web.ctx.env.get('CONTENT_TYPE')

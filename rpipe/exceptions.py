@@ -1,3 +1,6 @@
+import rpipe.config.exchange
+
+
 class RpException(Exception):
     pass
 
@@ -19,16 +22,20 @@ class RpHandleException(RpException):
     def code(self):
         return self.__code
 
+
 class RpHandleError(RpHandleException):
-    def __init__(self, code=255, *args, **kwargs):
+    def __init__(self, code=rpipe.config.exchange.UNHANDLED_EVENT_CODE, *args, 
+                 **kwargs):
         super(RpHandleError, self).__init__(code, *args, **kwargs)
 
 
 class RpConnectionRetry(RpException):
     pass
 
+
 class RpConnectionFail(RpConnectionRetry):
     pass
+
 
 class RpConnectionClosed(RpConnectionRetry):
     pass
