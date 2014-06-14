@@ -3,4 +3,5 @@ gevent==1.0.1
 greenlet==0.4.2
 gunicorn==19.0.0
 protobuf==2.5.0
+web.py==0.37
 wsgiref==0.1.2

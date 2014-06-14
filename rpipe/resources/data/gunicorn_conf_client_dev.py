@@ -3,9 +3,6 @@ daemon = 'false'
 
 bind = 'unix:/tmp/rp_client.gunicorn.sock'
 
-# Until our packages become smaller (currently 161M), this is a safe value.
-timeout = 120
-
 errorlog = '-'
 loglevel = 'debug'
 worker_class = 'gevent'

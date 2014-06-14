@@ -1,11 +1,14 @@
 import setuptools
+import os.path
 
 import rpipe
 
-with open('README.md') as f:
+app_path = os.path.dirname(rpipe.__file__)
+
+with open(os.path.join(app_path, 'resources', 'README.md')) as f:
       long_description = f.read()
 
-with open('requirements.txt') as f:
+with open(os.path.join(app_path, 'resources', 'requirements.txt')) as f:
       install_requires = map(lambda s: s.strip(), f)
 
 setuptools.setup(
@@ -19,7 +22,7 @@ setuptools.setup(
       author_email='myselfasunder@gmail.com',
       url='https://github.com/dsoprea/RestPipe',
       license='GPL 2',
-      packages=['rpipe'],
+      packages=setuptools.find_packages(exclude=['dev']),
       include_package_data=True,
       zip_safe=False,
       install_requires=install_requires,
@@ -27,7 +30,9 @@ setuptools.setup(
             'rpipe': ['resources/scripts/*', 
                       'resources/ssl/*',
                       'resources/data/*',
-                      'resources/protobuf/*'],
+                      'resources/protobuf/*'
+                      'resources/README.md',
+                      'resources/requirements.txt'],
       },
       scripts=[
             'rpipe/resources/scripts/rp_client_set_identity',
