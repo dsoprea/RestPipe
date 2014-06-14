@@ -34,6 +34,7 @@ class EventServer(object):
                      "[%s] [%s]", hostname, verb, noun)
 
         try:
+# TODO(dustin): Only do this if the hostname is not already an IP.
             ip = self.__resolver.lookup(hostname)
         except LookupError:
             raise web.HTTPError('404 Hostname not resolvable')
