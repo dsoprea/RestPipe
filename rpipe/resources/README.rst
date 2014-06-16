@@ -1,6 +1,7 @@
 **This documentation is still being developed.**
 
 
+----------------------
 Architectural Overview
 ----------------------
 
@@ -10,6 +11,7 @@ and will allow all nodes to transmit events (queries) to each other via a
 local web-server on each. The pipe is SSL-encrypted and -authenticated.
 
 
+--------------
 Usage Overview
 --------------
 
@@ -33,7 +35,9 @@ store it as such, and signal the original web-request that a reply has been
 received. The reply is collected by the web-request, and then returned with
 the content-type and data from the reply.
 
-### Event Handling
+
+Event Handling
+==============
 
 The method on the event-handler is derived from the noun and verb from the web-
 request. For example, a *GET* request is placed to the noun "time". This will
@@ -51,6 +55,7 @@ the handler will be "get_cat" and the parameters will be context, post-data,
 "hello ", and "world".
 
 
+------------
 Requirements
 ------------
 
@@ -74,6 +79,7 @@ RP. If a machine need not originate any requests, that instance of RP does not
 need a webserver.
 
 
+----------------
 Example Use-Case
 ----------------
 
@@ -90,6 +96,7 @@ return the data, the RP-server will receive the response, the web-request will
 return the response.
 
 
+------------
 Technologies
 ------------
 
@@ -99,6 +106,7 @@ Technologies
 - SSL authentication
 
 
+----------------
 Design Decisions
 ----------------
 
@@ -110,13 +118,30 @@ and have the handlers stage the data into a secondary location (like S3 for
 large files, if you're working with AWS).
 
 
+---------------
 Getting Started
 ---------------
 
-### Establishing SSL Identities
+This is a walkthrough of how to get an RP server and client running on a 
+development machine. When it comes to moving to production, the following 
+things will probably change (aside from the client and server being on separate 
+machines):
 
-We're going to use CaKey to establish keys and certificates. You may use any 
-method that you prefer.
+- The webservers' virtualhost hostnames.
+- The RP server and client webserver ports/bindings.
+- The RP server socket-server port/binding.
+- Use a corporate certificate authority to generate official server and client 
+  identities.
+- Running Gunicorn in production mode (it's started in development mode, 
+  below).
+- Customized event-handlers.
+
+
+Establishing SSL Identities
+===========================
+
+We're going to use `CaKit <https://github.com/dsoprea/CaKit>`_ to establish 
+keys and certificates. You may use any method that you prefer.
 
 1. Extract the CaKit project in order to easily generate keys::
 
@@ -150,10 +175,13 @@ method that you prefer.
     server.key.pem
     server.public.pem
 
-### Configure Nginx
+
+Configure Nginx
+===============
 
 1. Define *rpclient.local* and *rpserver.local* in your */etc/hosts* file as *127.0.0.1*.
-2. Added example Nginx configs.
+2. Added example Nginx configs::
+
     upstream rp_client {
         server unix:/tmp/rpclient.gunicorn.sock fail_timeout=0;
     }
@@ -196,7 +224,9 @@ method that you prefer.
             }
     }
 
-### Installing RestPipe
+
+Installing RestPipe
+===================
 
 1. Install RestPipe::
 
@@ -224,7 +254,9 @@ At this point, you have a pipe between a single server and a single client.
 There's not a whole lot of verbosity by default, but you can see the 
 underlying mechanics if the environment variable "DEBUG" is set to "1".
 
-### Example Events
+
+Example Events
+==============
 
 Obviously, you're responsible for implementing any event-handlers that you 
 might need. However, there are two event handlers defined by default, as an
@@ -233,48 +265,37 @@ below correlate to the example Nginx configs, above.
 
 - *time* (*GET*)
 
-  Command (from server)::
+  From client::
 
-    curl http://rpclient.local/server/time
-  
-  Response:: 
+    $ curl http://rpclient.local/server/time && echo
+    {"time_from_server": 1402897823.882672}
 
-    {"time": 1402896001.355335}
+  From server::
 
-  Command (from client)::
-
-    curl http://rpserver.local/client/localhost/time
-  
-  Response:: 
-
-    {"time": 1402896150.892647}
+    $ curl http://rpserver.local/client/localhost/time && echo
+    {"time_from_client": 1402897843.879908}
 
 - *cat* (*GET*)
 
-  Command (from server)::
+  From client:: 
 
-    curl http://rpclient.local/server/cat//hello%20/world
-  
-  Response::
+    $ curl http://rpclient.local/server/cat//hello%20/world && echo
+    {"result_from_server": "hello world"}
 
-    {"result": "hello world"}
+  From server::
 
-  Command (from client):: 
-
-    curl http://rpserver.local/client/localhost/cat//hello%20/world
-  
-  Response::
-
-    {"result": "hello world"}
+    $ curl http://rpserver.local/client/localhost/cat//hello%20/world && echo
+    {"result_from_client": "hello world"}
 
 
+-------------
 Customization
 -------------
 
 To set the server hostname and port for the client, set the 
-RP_CLIENT_TARGET_HOSTNAME and RP_CLIENT_TARGET_PORT environment variables.
+*RP_CLIENT_TARGET_HOSTNAME* and *RP_CLIENT_TARGET_PORT* environment variables.
 
-The set the interface binding on the server, set the BIND_IP and BIND_PORT
+The set the interface binding on the server, set the *BIND_IP* and *BIND_PORT*
 environment variables.
 
 When you're ready to implement your own event-handler, start your own project, 
@@ -282,14 +303,14 @@ write your module, make sure it inherits properly, and set the right
 environment variable with the fully-qualified name of your module.
 
 If you're writing a server event-handler, make sure it inherits from 
-rpipe.server.connection.ServerEventHandler, and set the fully-qualified module 
-name as the RP_EVENT_HANDLER_FQ_CLASS environment variable. If you're writing a 
-client event-handler, use the ClientEventHandle base-class from the same 
-package and the RP_EVENT_HANDLER_FQ_CLASS environment variable.
+*rpipe.server.connection.ServerEventHandler*, and set the fully-qualified module 
+name as the *RP_EVENT_HANDLER_FQ_CLASS* environment variable. If you're writing a 
+client event-handler, use the *ClientEventHandle* class from the same package 
+and the *RP_EVENT_HANDLER_FQ_CLASS* environment variable.
 
 Many of the configurables can be overriden via environment variables. If you 
 need to override more than a handful of values, you might prefer to set any 
 number of values in your own module, and then set the fully-qualified name of 
-the module into the RP_CLIENT_USER_CONFIG_MODULE or 
-RP_SERVER_USER_CONFIG_MODULE environment variable(s). All of the values from 
+the module into the *RP_CLIENT_USER_CONFIG_MODULE* or 
+*RP_SERVER_USER_CONFIG_MODULE* environment variable(s). All of the values from 
 your module will overwrite the defaults.
