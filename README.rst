@@ -1,0 +1,1 @@
+rpipe/resources/README.rst
