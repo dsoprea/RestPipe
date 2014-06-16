@@ -12,6 +12,8 @@ import rpipe.server.hostname_resolver
 
 _logger = logging.getLogger(__name__)
 
+_CT_JSON = 'application/json'
+
 
 class EventServer(object):
     def __init__(self, *args, **kwargs):

@@ -4,7 +4,7 @@ import sys
 
 USER_CONFIG_MODULE_NAME = os.environ.get('RP_SERVER_USER_CONFIG_MODULE', '')
 
-BIND_HOSTNAME = os.environ.get('RP_SERVER_BIND_INTERFACE', '0.0.0.0')
+BIND_IP = os.environ.get('RP_SERVER_BIND_INTERFACE', '0.0.0.0')
 BIND_PORT = int(os.environ.get('RP_SERVER_BIND_PORT', '1234'))
 
 _CERT_PATH = os.environ.get('RP_SERVER_CERT_PATH', '/var/lib/restpipe')
@@ -29,7 +29,7 @@ CONNECTION_HANDLER_FQ_CLASS = \
 EVENT_HANDLER_FQ_CLASS = \
     os.environ.get(
         'RP_EVENT_HANDLER_FQ_CLASS',
-        'rpipe.server.connection.DefaultServerEventHandler')
+        'rpipe.server.connection.TestServerEventHandler')
 
 DEFAULT_CONNECTION_WAIT_TIMEOUT_S = 20
 

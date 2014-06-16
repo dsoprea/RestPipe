@@ -1,7 +1,7 @@
 #!/usr/bin/env python2.7
 
-import os.path
 import logging
+import os.path
 import time
 import socket
 
@@ -20,8 +20,18 @@ import rpipe.message_loop
 _logger = logging.getLogger(__name__)
 
 
-class DefaultServerEventHandler(object):
+class ServerEventHandler(object):
     pass
+
+
+class TestServerEventHandler(ServerEventHandler):
+    def get_time(self, ctx, post_data):
+        _logger.info("TEST: get_time()")
+        return { 'time': time.time() }
+
+    def get_cat(self, ctx, post_data, x, y):
+        _logger.info("TEST: get_cat()")
+        return { 'result': str(x) + str(y) }
 
 
 class _ConnectionCatalog(object):
@@ -77,15 +87,6 @@ class _ConnectionCatalog(object):
         raise rpipe.server.exceptions.RpNoConnectionException(ip)
 
 
-class DefaultServerEventHandler(object):
-    def __init__(self, server_connection_handler):
-        self.__server_connection_handler = server_connection_handler
-
-    @property
-    def sch(self):
-        return self.__server_connection_handler
-
-
 class ServerConnectionHandler(rpipe.connection.Connection):
     def handle(socket, address):
         raise NotImplementedError()
@@ -127,7 +128,9 @@ class DefaultServerConnectionHandler(ServerConnectionHandler):
         event_handler_cls = rpipe.utility.load_cls_from_string(
                                 rpipe.config.server.EVENT_HANDLER_FQ_CLASS)
 
-        eh = event_handler_cls(self)
+        assert issubclass(event_handler_cls, ServerEventHandler) is True
+
+        eh = event_handler_cls()
         cml = rpipe.message_loop.CommonMessageLoop(self.__ws, eh, self.__ctx)
 
         try:
@@ -163,7 +166,7 @@ class Server(rpipe.request_server.RequestServer):
         assert issubclass(self.__connection_handler_cls, ServerConnectionHandler)
 
     def process_requests(self):
-        binding = (rpipe.config.server.BIND_HOSTNAME, 
+        binding = (rpipe.config.server.BIND_IP, 
                    rpipe.config.server.BIND_PORT)
 
         _logger.info("Running server: %s", binding)

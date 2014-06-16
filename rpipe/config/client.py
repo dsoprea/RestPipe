@@ -26,7 +26,9 @@ RECONNECT_DELAY_S = 5
 EVENT_HANDLER_FQ_CLASS = \
     os.environ.get(
         'RP_EVENT_HANDLER_FQ_CLASS',
-        'rpipe.client.connection.DefaultClientEventHandler')
+        'rpipe.client.connection.TestClientEventHandler')
+
+MINIMAL_CONNECTION_FAIL_REATTEMPT_WAIT_TIME_S = 2
 
 # Install attributes on this module from the optional user-config.
 if USER_CONFIG_MODULE_NAME != '':

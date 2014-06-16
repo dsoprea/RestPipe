@@ -8,6 +8,8 @@ import rpipe.client.connection
 
 _logger = logging.getLogger(__name__)
 
+_CT_JSON = 'application/json'
+
 
 class EventClient(object):
     def handle(self, verb, noun):

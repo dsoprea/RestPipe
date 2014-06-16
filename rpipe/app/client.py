@@ -33,7 +33,7 @@ def connection_cycle():
 
             time_since_attempt_s = (time.time() - last_attempt)
             wait_time_s = \
-                rpipe.config.client_web.\
+                rpipe.config.client.\
                     MINIMAL_CONNECTION_FAIL_REATTEMPT_WAIT_TIME_S - \
                 time_since_attempt_s
 

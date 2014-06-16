@@ -1,8 +1,8 @@
 #!/usr/bin/env python2.7
 
-import os.path
-import contextlib
 import logging
+import os.path
+import time
 
 import gevent
 import gevent.socket
@@ -20,13 +20,18 @@ import rpipe.message_exchange
 _logger = logging.getLogger(__name__)
 
 
-class DefaultClientEventHandler(object):
-    def __init__(self, client_connection_handler):
-        self.__client_connection_handler = client_connection_handler
+class ClientEventHandler(object):
+    pass
 
-    @property
-    def cch(self):
-        return self.__client_connection_handler
+
+class TestClientEventHandler(ClientEventHandler):
+    def get_time(self, ctx, post_data):
+        _logger.info("TEST: get_time()")
+        return { 'time': time.time() }
+
+    def get_cat(self, ctx, post_data, x, y):
+        _logger.info("TEST: get_cat()")
+        return { 'result': str(x) + str(y) }
 
 
 class _ClientConnectionHandler(
@@ -135,7 +140,9 @@ class _ClientConnectionHandler(
             event_handler_cls = rpipe.utility.load_cls_from_string(
                                     rpipe.config.client.EVENT_HANDLER_FQ_CLASS)
 
-            eh = event_handler_cls(self)
+            assert issubclass(event_handler_cls, ClientEventHandler) is True
+
+            eh = event_handler_cls()
             ctx = rpipe.message_loop.CONNECTION_CONTEXT_T(self.__binding)
             cml = rpipe.message_loop.CommonMessageLoop(self.__ws, eh, ctx)
 
