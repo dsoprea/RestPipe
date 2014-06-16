@@ -5,7 +5,7 @@ import rpipe
 
 app_path = os.path.dirname(rpipe.__file__)
 
-with open(os.path.join(app_path, 'resources', 'README.md')) as f:
+with open(os.path.join(app_path, 'resources', 'README.rst')) as f:
       long_description = f.read()
 
 with open(os.path.join(app_path, 'resources', 'requirements.txt')) as f:
@@ -31,7 +31,7 @@ setuptools.setup(
                       'resources/ssl/*',
                       'resources/data/*',
                       'resources/protobuf/*'
-                      'resources/README.md',
+                      'resources/README.rst',
                       'resources/requirements.txt'],
       },
       scripts=[
