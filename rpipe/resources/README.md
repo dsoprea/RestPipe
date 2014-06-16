@@ -118,8 +118,8 @@ Getting Started
 We're going to use CaKey to establish keys and certificates. You may use any 
 method that you prefer.
 
-1. Extract the CaKit project in order to easily generate keys.
-    ```
+1. Extract the CaKit project in order to easily generate keys::
+
     $ sudo git clone https://github.com/dsoprea/CaKit.git ca_kit
     Cloning into 'ca_kit'...
     remote: Counting objects: 38, done.
@@ -127,9 +127,9 @@ method that you prefer.
     remote: Total 38 (delta 19), reused 31 (delta 12)
     Unpacking objects: 100% (38/38), done.
     Checking connectivity... done.
-    ```
-2. Build identities:
-    ```
+
+2. Build identities::
+
     $ cd ca_kit/
     $ sudo ./create_ca.py
     $ sudo ./create.py -n server
@@ -149,7 +149,6 @@ method that you prefer.
     server.csr.pem
     server.key.pem
     server.public.pem
-    ```
 
 ### Configure Nginx
 
@@ -199,31 +198,23 @@ method that you prefer.
 
 ### Installing RestPipe
 
-1. Install RestPipe:
+1. Install RestPipe::
 
-    ```
     $ sudo pip install restpipe
-    ```
 
-2. Load identities:
+2. Load identities::
 
-    ```
     $ cd /usr/local/ca_kit/output/
     $ sudo rp_server_set_identity server.key.pem server.crt.pem ca.crt.pem 
     $ sudo rp_client_set_identity client.key.pem client.crt.pem
-    ```
 
-3. Start the RestPipe server:
+3. Start the RestPipe server::
 
-    ```
     $ rp_server_start_gunicorn_dev 
-    ```
 
-4. Start the RestPipe client (in another window):
+4. Start the RestPipe client (in another window)::
 
-    ```
     $ rp_client_start_gunicorn_dev 
-    ```
 
 The server and the client can actually be started in any order. Also, just as
 the scripts above are meant to development (notice the "dev" suffix), there are
@@ -240,21 +231,41 @@ might need. However, there are two event handlers defined by default, as an
 example, on both the server side and client side. The commands and responses
 below correlate to the example Nginx configs, above.
 
-- Noun: "time" Verb: GET
+- *time* (*GET*)
 
-  Command (from server): ```curl http://rpclient.local/server/time```
-  Response: ```{"time": 1402896001.355335}```
+  Command (from server)::
 
-  Command (from client): ```curl http://rpserver.local/client/localhost/time```
-  Response: ```{"time": 1402896150.892647}```
+    curl http://rpclient.local/server/time
+  
+  Response:: 
 
-- Noun: "cat" Verb: GET
+    {"time": 1402896001.355335}
 
-  Command (from server): ```curl http://rpclient.local/server/cat//hello%20/world```
-  Response: ```{"result": "hello world"}```
+  Command (from client)::
 
-  Command (from client): ```curl http://rpserver.local/client/localhost/cat//hello%20/world```
-  Response: ```{"result": "hello world"}```
+    curl http://rpserver.local/client/localhost/time
+  
+  Response:: 
+
+    {"time": 1402896150.892647}
+
+- *cat* (*GET*)
+
+  Command (from server)::
+
+    curl http://rpclient.local/server/cat//hello%20/world
+  
+  Response::
+
+    {"result": "hello world"}
+
+  Command (from client):: 
+
+    curl http://rpserver.local/client/localhost/cat//hello%20/world
+  
+  Response::
+
+    {"result": "hello world"}
 
 
 Customization
