@@ -27,11 +27,11 @@ class ServerEventHandler(object):
 class TestServerEventHandler(ServerEventHandler):
     def get_time(self, ctx, post_data):
         _logger.info("TEST: get_time()")
-        return { 'time': time.time() }
+        return { 'time_from_server': time.time() }
 
     def get_cat(self, ctx, post_data, x, y):
         _logger.info("TEST: get_cat()")
-        return { 'result': str(x) + str(y) }
+        return { 'result_from_server': str(x) + str(y) }
 
 
 class _ConnectionCatalog(object):
