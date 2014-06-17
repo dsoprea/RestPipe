@@ -11,6 +11,8 @@ with open(os.path.join(app_path, 'resources', 'README.rst')) as f:
 with open(os.path.join(app_path, 'resources', 'requirements.txt')) as f:
       install_requires = map(lambda s: s.strip(), f)
 
+# TODO(dustin): Create the certificate directory, automatically.
+
 setuptools.setup(
       name='restpipe',
       version=rpipe.__version__,
@@ -27,12 +29,12 @@ setuptools.setup(
       zip_safe=False,
       install_requires=install_requires,
       package_data={
-            'rpipe': ['resources/scripts/*', 
+            'rpipe': ['resources/README.rst',
+                      'resources/requirements.txt',
+                      'resources/scripts/*', 
                       'resources/ssl/*',
                       'resources/data/*',
-                      'resources/protobuf/*'
-                      'resources/README.rst',
-                      'resources/requirements.txt'],
+                      'resources/protobuf/*'],
       },
       scripts=[
             'rpipe/resources/scripts/rp_client_set_identity',
