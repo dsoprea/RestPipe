@@ -112,7 +112,7 @@ class CommonMessageLoop(object):
         url_parts = message_obj.noun.split('//')
 
         noun = url_parts[0]
-        if len(url_parts) > 1 and url_parts[1]:
+        if len(url_parts) > 1:
             parameters = url_parts[1].split('/')
         else:
             parameters = []
