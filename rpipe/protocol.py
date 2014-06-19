@@ -32,8 +32,6 @@ class SocketWrapper(object):
     def __getattr__(self, name):
         return getattr(self.__s, name)
 
-# TODO(dustin): We need read/write callers to catch EOFError.
-
     def read(self, *args, **kwargs):
         try:
             data = self.__s.read(*args, **kwargs)

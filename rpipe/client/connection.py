@@ -112,8 +112,7 @@ class _ClientConnectionHandler(
         def heartbeat_die_cb(hb_g):
             _logger.error("The heartbeat gthread exceptioned-out. Killing "
                           "connection-handler gthread.")
-# TODO(dustin): Verify that this effectively brings the connection down (and a 
-#               new one is reestablished).
+
             self.close()
 
         g.link_exception(heartbeat_die_cb)
@@ -172,10 +171,6 @@ class _ClientManager(object):
 
     @property
     def connection(self):
-# TODO(dustin): As long as we can keep the EOFError's from interrupting the 
-#               process, this should keep us connected. We might have to wrap
-#               the read/write method in SocketWrapper to automatically connect 
-#               and retry if we get EOF.
         if self.__c is None or self.__c.connected is False:
             _logger.info("Establishing new connection.")
             c = _ClientConnectionHandler()
