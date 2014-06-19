@@ -1,9 +1,11 @@
 import logging
 import functools
+import re
 
 import web
 
 import rpipe.config.web_server
+import rpipe.config.general
 import rpipe.server.exceptions
 import rpipe.event
 import rpipe.server.connection
@@ -35,17 +37,20 @@ class EventServer(object):
         _logger.info("Server received request, to be sent to client [%s]: "
                      "[%s] [%s]", hostname, verb, noun)
 
-        try:
-# TODO(dustin): Only do this if the hostname is not already an IP.
-            ip = self.__resolver.lookup(hostname)
-        except LookupError:
-            raise web.HTTPError('404 Hostname not resolvable')
-        except:
-            _logger.exception("Could not resolve hostname: [%s]", 
-                              hostname)
-            raise web.HTTPError('500 Hostname resolution error')
+        if re.match(rpipe.config.general.IP_RX, hostname) is not None:
+            ip = hostname
+            _logger.debug("The client hostname is actually an IP: [%s]", ip)
         else:
-            _logger.debug("Resolved client hostname [%s]: [%s]", hostname, ip)
+            try:
+                ip = self.__resolver.lookup(hostname)
+            except LookupError:
+                raise web.HTTPError('404 Hostname not resolvable')
+            except:
+                _logger.exception("Could not resolve hostname: [%s]", 
+                                  hostname)
+                raise web.HTTPError('500 Hostname resolution error')
+            else:
+                _logger.debug("Resolved client hostname [%s]: [%s]", hostname, ip)
 
         try:
             c = self.__cc.wait_for_connection(ip)
