@@ -1,6 +1,3 @@
-**This documentation is still being developed.**
-
-
 ----------------------
 Architectural Overview
 ----------------------
