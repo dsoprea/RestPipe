@@ -162,7 +162,8 @@ class CommonMessageLoop(object):
 
             result = { 
                 'exception': {
-                    'text': traceback.format_exc(),
+                    'message': str(e),
+                    'traceback': traceback.format_exc(),
                     'type': 'managed',
                     'class': e.__class__.__name__,
                 }
@@ -175,7 +176,8 @@ class CommonMessageLoop(object):
 
             result = { 
                 'exception': {
-                    'text': traceback.format_exc(),
+                    'message': str(e),
+                    'traceback': traceback.format_exc(),
                     'type': 'uncaught',
                     'class': e.__class__.__name__,
                 }
@@ -197,7 +199,9 @@ class CommonMessageLoop(object):
                       result_data.__class__.__name__, code)
 
         if result_data is None:
-            _logger.debug("Result data was None. Coalescing to empty.")
+            _logger.debug("Result data was [literally] None. Coalescing to "
+                          "empty.")
+
             result_data = ''
 
         if issubclass(result_data.__class__, 
