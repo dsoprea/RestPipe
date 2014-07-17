@@ -332,6 +332,11 @@ return-code (which is set into the `X-Event-Return-Code` response header)::
         }
     }
 
+If you're using the `requests <http://docs.python-requests.org/en/latest/>`_ 
+client, you can call `rpipe.event_response.raise_for_exception` with the 
+response, and, if there was an error, it'll build a PipeFailError exception 
+with the information from the response and raise it.
+
 
 ----------
 Statistics
