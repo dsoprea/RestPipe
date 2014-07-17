@@ -290,7 +290,7 @@ Customization
 -------------
 
 To set the server hostname and port for the client, set the 
-*RP_CLIENT_TARGET_HOSTNAME* and *RP_CLIENT_TARGET_PORT* environment variables.
+`RP_CLIENT_TARGET_HOSTNAME` and `RP_CLIENT_TARGET_PORT` environment variables.
 
 The set the interface binding on the server, set the *BIND_IP* and *BIND_PORT*
 environment variables.
@@ -301,20 +301,19 @@ environment variable with the fully-qualified name of your module.
 
 If you're writing a server event-handler, make sure it inherits from 
 *rpipe.server.connection.ServerEventHandler*, and set the fully-qualified module 
-name as the *RP_EVENT_HANDLER_FQ_CLASS* environment variable. If you're writing a 
+name as the `RP_EVENT_HANDLER_FQ_CLASS` environment variable. If you're writing a 
 client event-handler, use the *ClientEventHandle* class from the same package 
-and the *RP_EVENT_HANDLER_FQ_CLASS* environment variable.
+and the `RP_EVENT_HANDLER_FQ_CLASS` environment variable.
 
 Many of the configurables can be overriden via environment variables. If you 
 need to override more than a handful of values, you might prefer to set any 
 number of values in your own module, and then set the fully-qualified name of 
-the module into the *RP_CLIENT_USER_CONFIG_MODULE* or 
-*RP_SERVER_USER_CONFIG_MODULE* environment variable(s). All of the values from 
+the module into the `RP_CLIENT_USER_CONFIG_MODULE` or 
+`RP_SERVER_USER_CONFIG_MODULE` environment variable(s). All of the values from 
 your module will overwrite the defaults.
 
-You may also inherit from rpipe.connection_state_events.ConnectionStateEvents 
-and override the methods to receive connection-success and connection-fail
-callbacks.
+You may also inherit from `rpipe.connection_state_events.ConnectionStateEvents`
+and override the `connection_success` and `connection_fail` methods.
 
 
 --------------
@@ -323,8 +322,7 @@ Error Handling
 
 When an uncaught exception occurs on the side of the pipe that is handling an 
 event, it will be captured and forwarded via the HTTP body with a non-zero 
-return-code. The return-code is set into the `X-Event-Return-Code` response 
-header::
+return-code (which is set into the `X-Event-Return-Code` response header)::
 
     {
         "exception": {
@@ -340,5 +338,5 @@ Statistics
 ----------
 
 RestPipe will emit `statsd <https://github.com/etsy/statsd/>`_ events to 
-*localhost:8125* by default. To override this, set the RP_STATSD_HOST and
-RP_STATSD_PORT environment variables. To disable, set them to empty.
+*localhost:8125* by default. To override this, set the `RP_STATSD_HOST` and
+`RP_STATSD_PORT` environment variables. To disable this, set them to empty.
