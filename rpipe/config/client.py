@@ -28,6 +28,11 @@ EVENT_HANDLER_FQ_CLASS = \
         'RP_EVENT_HANDLER_FQ_CLASS',
         'rpipe.client.connection.TestClientEventHandler')
 
+CONNECTION_STATE_CHANGE_EVENT_CLASS = \
+    os.environ.get(
+        'RP_CONNECTION_STATE_CHANGE_EVENT_CLASS',
+        'rpipe.state_change_event.StateChangeEvent') or None
+
 MINIMAL_CONNECTION_FAIL_REATTEMPT_WAIT_TIME_S = 2
 
 # Install attributes on this module from the optional user-config.

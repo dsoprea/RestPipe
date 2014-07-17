@@ -8,10 +8,12 @@ import web
 import gevent
 
 import rpipe.config.protocol
+import rpipe.config.statsd
 import rpipe.protocol
 import rpipe.protocols
 import rpipe.exceptions
 import rpipe.message_exchange
+import rpipe.stats
 
 _logger = logging.getLogger(__name__)
 
@@ -63,6 +65,9 @@ class CommonMessageLoop(object):
             except rpipe.exceptions.RpConnectionClosed:
                 break
 
+            rpipe.stats.post_to_counter(
+                rpipe.config.statsd.EVENT_MESSAGE_RECEIVE_TICK)
+
             (message_info, message_obj) = message
 
             message_type = rpipe.protocol.get_message_type_from_info(
@@ -90,7 +95,10 @@ class CommonMessageLoop(object):
                 else:
                     continue
 
-            gevent.spawn(handler, message_id, message_obj)
+            with rpipe.stats.time_and_post(
+                    rpipe.config.statsd.\
+                        EVENT_MESSAGE_RECEIVE_HANDLE_TIMING):
+                handler(message_id, message_obj)
 
         rpipe.message_exchange.stop_exchange(self.__ctx.participant_address)
 

@@ -8,28 +8,59 @@ import gevent
 
 import rpipe.config
 import rpipe.config.client_web
+import rpipe.config.statsd
+import rpipe.stats
 import rpipe.exceptions
 import rpipe.client.connection
+import rpipe.utility
 
 _logger = logging.getLogger(__name__)
 
 web.config.debug = rpipe.config.IS_DEBUG
 
 def connection_cycle():
+    state_change_event_cls = rpipe.utility.load_cls_from_string(
+                                rpipe.config.client.\
+                                    CONNECTION_STATE_CHANGE_EVENT_CLASS)
+
+    sce = state_change_event_cls()
+
     while 1:
+        rpipe.stats.post_to_counter(
+            rpipe.config.statsd.EVENT_CONNECTION_CLIENT_NEW_TICK)
+
         # If we get disconnected, we'll continually reconnect.
         try:
             _logger.info("Reattempting connection to server.")
 
             # Establish a connection to the server.
-            last_attempt = time.time()
-            c = rpipe.client.connection.get_connection()
+            with rpipe.stats.time_and_post(
+                    rpipe.config.statsd.\
+                        EVENT_CONNECTION_CLIENT_HEARTBEAT_TIMING,
+                    success_event=\
+                        rpipe.config.statsd.\
+                            EVENT_CONNECTION_CLIENT_HEARTBEAT_SUCCESS_TICK,
+                    fail_event=\
+                        rpipe.config.statsd.\
+                            EVENT_CONNECTION_CLIENT_HEARTBEAT_FAIL_TICK):
+                last_attempt = time.time()
+                c = rpipe.client.connection.get_connection()
+
+            rpipe.stats.post_to_counter(
+                rpipe.config.statsd.EVENT_CONNECTION_CLIENT_CONNECTED_TICK)
+
+            sce.connect_success()
 
             # Start the local socket-server.
             c.process_requests()
         except rpipe.exceptions.RpConnectionRetry:
             _logger.exception("Connection has broken and will be "
                               "reattempted.")
+
+            sce.connect_fail()
+
+            rpipe.stats.post_to_counter(
+                rpipe.config.statsd.EVENT_CONNECTION_CLIENT_BROKEN_TICK)
 
             time_since_attempt_s = (time.time() - last_attempt)
             wait_time_s = \

@@ -9,6 +9,8 @@ import gevent.socket
 import gevent.ssl
 
 import rpipe.config.client
+import rpipe.config.statsd
+
 import rpipe.exceptions
 import rpipe.protocol
 import rpipe.protocols
@@ -16,6 +18,7 @@ import rpipe.connection
 import rpipe.request_server
 import rpipe.message_loop
 import rpipe.message_exchange
+import rpipe.stats
 
 _logger = logging.getLogger(__name__)
 
@@ -120,7 +123,10 @@ class _ClientConnectionHandler(
     def __send_heartbeat(self):
         _logger.debug("Sending heartbeart.")
 
-        self.initiate_message(self.__heartbeat_msg)
+        with rpipe.stats.time_and_post(
+                rpipe.config.statsd.EVENT_CONNECTION_CLIENT_HEARTBEAT_TIMING):
+            self.initiate_message(self.__heartbeat_msg)
+
         _logger.debug("Heartbeat response received.")
 
         self.__schedule_heartbeat()
@@ -129,7 +135,15 @@ class _ClientConnectionHandler(
         # This only works because the CommonMessageLoop has already been 
         # started and has registered the other participant with the 
         # MessageExchange.
-        return rpipe.message_exchange.send_and_receive(self.__binding, message_obj)
+
+        rpipe.stats.post_to_counter(
+            rpipe.config.statsd.EVENT_CONNECTION_SEND_TICK)
+
+        with rpipe.stats.time_and_post(
+                rpipe.config.statsd.EVENT_CONNECTION_SEND_TIMING):
+            return rpipe.message_exchange.send_and_receive(
+                    self.__binding, 
+                    message_obj)
 
     def process_requests(self):
         assert self.__ws is not None
