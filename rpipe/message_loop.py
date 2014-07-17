@@ -164,20 +164,6 @@ class CommonMessageLoop(object):
 
         try:
             result = handler(self.__ctx, (mimetype, data), *parameters)
-        except rpipe.exceptions.RpHandleException as e:
-            _logger.exception("Handled exception during event: %s", 
-                              e.__class__.__name__)
-
-            result = { 
-                'exception': {
-                    'message': str(e),
-                    'traceback': traceback.format_exc(),
-                    'type': 'managed',
-                    'class': e.__class__.__name__,
-                }
-            }
-
-            code = e.code
         except Exception as e:
             _logger.exception("Unhandled exception during event: %s", 
                               e.__class__.__name__)
@@ -186,7 +172,6 @@ class CommonMessageLoop(object):
                 'exception': {
                     'message': str(e),
                     'traceback': traceback.format_exc(),
-                    'type': 'uncaught',
                     'class': e.__class__.__name__,
                 }
             }

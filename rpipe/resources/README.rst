@@ -311,3 +311,34 @@ number of values in your own module, and then set the fully-qualified name of
 the module into the *RP_CLIENT_USER_CONFIG_MODULE* or 
 *RP_SERVER_USER_CONFIG_MODULE* environment variable(s). All of the values from 
 your module will overwrite the defaults.
+
+You may also inherit from rpipe.connection_state_events.ConnectionStateEvents 
+and override the methods to receive connection-success and connection-fail
+callbacks.
+
+
+--------------
+Error Handling
+--------------
+
+When an uncaught exception occurs on the side of the pipe that is handling an 
+event, it will be captured and forwarded via the HTTP body with a non-zero 
+return-code. The return-code is set into the `X-Event-Return-Code` response 
+header::
+
+    {
+        "exception": {
+            "message": "<message>",
+            "traceback": "<traceback>",
+            "class": "<class>",
+        }
+    }
+
+
+----------
+Statistics
+----------
+
+RestPipe will emit `statsd <https://github.com/etsy/statsd/>`_ events to 
+*localhost:8125* by default. To override this, set the RP_STATSD_HOST and
+RP_STATSD_PORT environment variables. To disable, set them to empty.
