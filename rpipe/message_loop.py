@@ -142,12 +142,21 @@ class CommonMessageLoop(object):
                 message_id, 
                 rpipe.config.protocol.UNHANDLED_EVENT_DEFAULT_RESULT_CODE)
         else:
-            self.__process_event(
-                handler,
-                message_id,
-                parameters,
-                message_obj.mimetype,
-                message_obj.data)
+            counter_name = rpipe.config.statsd.EVENT_HANDLER_TICK_TEMPLATE % \
+                           { 'handler_name': event_handler_name }
+
+            rpipe.stats.post_to_counter(counter_name)
+
+            timer_name = rpipe.config.statsd.EVENT_HANDLER_TIMING_TEMPLATE % \
+                         { 'handler_name': event_handler_name }
+
+            with rpipe.stats.time_and_post(timer_name):
+                self.__process_event(
+                    handler,
+                    message_id,
+                    parameters,
+                    message_obj.mimetype,
+                    message_obj.data)
 
     def __process_event(self, handler, message_id, parameters, mimetype, data):
         """Processes event in a new gthread."""

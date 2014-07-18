@@ -16,3 +16,6 @@ EVENT_CONNECTION_SEND_TIMING = 'message.send.timing'
 
 EVENT_MESSAGE_RECEIVE_TICK          = 'message.receive.tick'
 EVENT_MESSAGE_RECEIVE_HANDLE_TIMING = 'message.receive.handle.timing'
+
+EVENT_HANDLER_TICK_TEMPLATE = 'message.received.handle.%(handler_name)s.tick'
+EVENT_HANDLER_TIMING_TEMPLATE = 'message.received.handle.%(handler_name)s.timing'

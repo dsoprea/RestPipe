@@ -25,6 +25,7 @@ def post_to_counter(event):
     if _SC is None:
         return
 
+    _logger.debug("Incrementing: [%s]", event)
     _SC.incr(event)
 
 @contextlib.contextmanager
@@ -39,11 +40,14 @@ def time_and_post(timing_event, success_event=None, fail_event=None):
         yield
     except:
         if fail_event is not None:
+            _logger.debug("Incrementing counter for FAILED timed event: [%s]", fail_event)
             post_to_counter(fail_event)
 
         raise
     else:
         if success_event is not None:
+            _logger.debug("Incrementing counter for SUCCESSFUL timed event: [%s]", success_event)
             post_to_counter(success_event)
 
+    _logger.debug("Posting timing for complete event: [%s]", timing_event)
     t.stop()
