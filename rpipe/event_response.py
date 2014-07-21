@@ -8,7 +8,7 @@ class PipeFailError(Exception):
         message = "(%d) [%s] [%s] %s" % \
                   (return_code, fail_type, class_name, message)
 
-        super(_PipeFailError, self).__init__(message)
+        super(PipeFailError, self).__init__(message)
 
         self.__return_code = return_code
         self.__error_type = fail_type
