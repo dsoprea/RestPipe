@@ -43,6 +43,8 @@ class _ConnectionCatalog(object):
         self.__connections = {}
 
     def register(self, c):
+# TODO(dustin): Connections are not being cleaned-up quick enough, and this 
+#               presents reliability problems in multiple different ways.
         if c in self.__connections:
             raise ValueError("Can not register already-registered connection. "
                              "A previous connection from this client might "
@@ -112,7 +114,7 @@ class DefaultServerConnectionHandler(ServerConnectionHandler):
     def handle_new_connection(self, socket, address):
         """We've received a new connection."""
 
-        self.__ws = rpipe.protocol.SocketWrapper(socket.makefile())
+        self.__ws = rpipe.protocol.SocketWrapper(socket, socket.makefile())
         self.__address = address
         self.__ctx = rpipe.message_loop.CONNECTION_CONTEXT_T(self.__address)
 
@@ -131,7 +133,11 @@ class DefaultServerConnectionHandler(ServerConnectionHandler):
         assert issubclass(event_handler_cls, ServerEventHandler) is True
 
         eh = event_handler_cls()
-        cml = rpipe.message_loop.CommonMessageLoop(self.__ws, eh, self.__ctx)
+        cml = rpipe.message_loop.CommonMessageLoop(
+                self.__ws, 
+                eh, 
+                self.__ctx, 
+                watch_heartbeats=True)
 
         try:
             cml.handle(exit_on_unknown=True)
@@ -172,7 +178,8 @@ class Server(rpipe.request_server.RequestServer):
         _logger.info("Running server: %s", binding)
 
         handler = self.__connection_handler_cls()
-
+# TODO(dustin): We need to have a watchdog process, to raise an error if nothing is connected.
+# TODO(dustin): We need to debug what is dying or blocking the flow. Is it StreamServer?
         server = gevent.server.StreamServer(
                     binding, 
                     handler.handle_new_connection, 

@@ -68,6 +68,13 @@ def connection_cycle():
                     MINIMAL_CONNECTION_FAIL_REATTEMPT_WAIT_TIME_S - \
                 time_since_attempt_s
 
+            _logger.debug("TIME_SINCE_ATTEMPT_S=(%d) MINIMAL_CONNECTION_FAIL_"
+                          "REATTEMPT_WAIT_TIME_S=(%d) WAIT_TIME_S=(%d)",
+                          time_since_attempt_s,
+                          rpipe.config.client.\
+                            MINIMAL_CONNECTION_FAIL_REATTEMPT_WAIT_TIME_S,
+                          wait_time_s)
+
             if wait_time_s > 0:
                 _logger.info("Waiting for (%d) seconds before reconnect.", 
                              wait_time_s)

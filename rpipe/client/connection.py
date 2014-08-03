@@ -77,7 +77,7 @@ class _ClientConnectionHandler(
         except gevent.socket.error:
             raise rpipe.exceptions.RpConnectionFail(str(gevent.socket.error))
 
-        self.__ws = rpipe.protocol.SocketWrapper(ss.makefile())
+        self.__ws = rpipe.protocol.SocketWrapper(ss, ss.makefile())
         self.__connected = True
 
         _logger.debug("Scheduling heartbeat.")

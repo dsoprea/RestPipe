@@ -24,17 +24,19 @@ class SocketWrapper(object):
     """A thin wrapper that throws the right exceptions when the pipe is broken.
     """
 
-    def __init__(self, s):
-        assert s is not None
+    def __init__(self, socket, file_):
+        assert socket is not None
+        assert file_ is not None
 
-        self.__s = s
+        self.__socket = socket
+        self.__file = file_
 
     def __getattr__(self, name):
-        return getattr(self.__s, name)
+        return getattr(self.__file, name)
 
     def read(self, *args, **kwargs):
         try:
-            data = self.__s.read(*args, **kwargs)
+            data = self.__file.read(*args, **kwargs)
         except gevent.socket.error as e:
             message = ("There was a socket error (read). Closing stream: %s" % (str(e)))
             _logger.exception(message)
@@ -47,8 +49,8 @@ class SocketWrapper(object):
 
     def write(self, *args, **kwargs):
         try:
-            self.__s.write(*args, **kwargs)
-            self.__s.flush()
+            self.__file.write(*args, **kwargs)
+            self.__file.flush()
         except gevent.ssl.SSLError as e:
             message = ("There was an SSL error (read). Closing stream: %s" % (str(e)))
             _logger.exception(message)
@@ -57,6 +59,9 @@ class SocketWrapper(object):
             message = ("There was a socket error (write). Closing stream: %s" % (str(e)))
             _logger.exception(message)
             raise rpipe.exceptions.RpConnectionClosed(message)
+
+    def __str__(self):
+        return str(self.__socket.getpeername())
 
 def id_generator():
     """Generate IDs for composed messages. They will all the the same length.

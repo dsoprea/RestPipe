@@ -33,7 +33,9 @@ CONNECTION_STATE_CHANGE_EVENT_CLASS = \
         'RP_CONNECTION_STATE_CHANGE_EVENT_CLASS',
         'rpipe.state_change_event.StateChangeEvent') or None
 
-MINIMAL_CONNECTION_FAIL_REATTEMPT_WAIT_TIME_S = 2
+# We deal in terms of seconds, and we need to make sure to give the other side 
+# enough time to clean-up the old connection.
+MINIMAL_CONNECTION_FAIL_REATTEMPT_WAIT_TIME_S = 5
 
 # Install attributes on this module from the optional user-config.
 if USER_CONFIG_MODULE_NAME != '':

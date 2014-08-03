@@ -3,12 +3,14 @@ import collections
 import traceback
 import json
 import types
+import time
 
 import web
 import gevent
 
 import rpipe.config.protocol
 import rpipe.config.statsd
+import rpipe.config.client
 import rpipe.protocol
 import rpipe.protocols
 import rpipe.exceptions
@@ -26,7 +28,8 @@ _CT_JSON = 'application/json'
 
 
 class CommonMessageLoop(object):
-    def __init__(self, wrapped_socket, event_handler, connection_context):
+    def __init__(self, wrapped_socket, event_handler, connection_context, 
+                 watch_heartbeats=False):
         assert wrapped_socket is not None
 
         self.__ws = wrapped_socket
@@ -40,6 +43,47 @@ class CommonMessageLoop(object):
         heartbeat_reply_message_obj.version = 1
 
         self.__heartbeat_reply_message_obj = heartbeat_reply_message_obj
+
+        self.__last_heartbeat_epoch = None
+
+        if watch_heartbeats is True:
+            self.__heartbeat_watchdog_g = gevent.spawn(
+                                            self.__watch_heartbeats,
+                                            gevent.getcurrent())
+
+    def __watch_heartbeats(self, parent_g):
+        """Make sure that heartbeats are happening on this connection."""
+
+        alarm_threshold_s = rpipe.config.client.HEARTBEAT_INTERVAL_S * 2
+
+        _logger.debug("Starting heartbeat watchdog: ALARM_THRESHOLD=(%d)s", 
+                      alarm_threshold_s)
+
+        while 1:
+            gevent.sleep(alarm_threshold_s)
+            
+            if self.__last_heartbeat_epoch is None:
+                parent_g.kill()
+                raise IOError("No heartbeats have occurred yet. Terminating "
+                              "connection: [%s]" % (self.__ws,))
+
+            time_since_last_heartbeat_s = time.time() - \
+                                          self.__last_heartbeat_epoch
+
+            # Was there a heartbeat since the last check?
+            if time_since_last_heartbeat_s > alarm_threshold_s:
+                parent_g.kill()
+                raise IOError("Heartbeats are not being received, or not "
+                              "keeping up. Terminating connection. "
+                              "SINCE_LAST=(%d)s > "
+                              "CHECK_INTERVAL=(%d)s SOCKET=[%s]" % 
+                              (time_since_last_heartbeat_s, 
+                               alarm_threshold_s,
+                               self.__ws))
+            else:
+                _logger.debug("Heartbeats are still timely: (%d)s < (%d)s",
+                              time_since_last_heartbeat_s,
+                              alarm_threshold_s)
 
     def handle(self, exit_on_unknown=False):
         rpipe.message_exchange.start_exchange(
@@ -105,6 +149,8 @@ class CommonMessageLoop(object):
     def __handle_heartbeat(self, message_id, message_obj):
         _logger.debug("Responding to heartbeat: %s", 
                       self.__ctx.participant_address)
+
+        self.__last_heartbeat_epoch = time.time()
 
         rpipe.message_exchange.send(
             self.__ctx.participant_address, 
