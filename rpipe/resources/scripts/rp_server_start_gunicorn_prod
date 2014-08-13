@@ -12,8 +12,11 @@ root_path = os.path.abspath(os.path.join(os.path.dirname(rpipe.__file__), '..'))
 import os
 os.chdir(root_path)
 
+working_directory = os.environ.get('RP_GUNICORN_PATH', '/usr/local/bin')
+gunicorn_filepath = os.path.join(working_directory, 'gunicorn')
+
 import subprocess
-cmd = ['gunicorn', '-c', 'rpipe/resources/data/gunicorn_conf_server_prod.py', 'rpipe.app.wsgi_server:wsgi']
+cmd = [gunicorn_filepath, '-c', 'rpipe/resources/data/gunicorn_conf_server_prod.py', 'rpipe.app.wsgi_server:wsgi']
 p = subprocess.Popen(cmd)
 r = p.wait()
 if r != 0:
