@@ -20,16 +20,7 @@ ch = logging.StreamHandler()
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
-# TODO(dustin): This all does not work for a Linux system. Just omit the "address" parameter completely.
-#if sys.platform == 'darwin':
-#    address = '/var/run/syslog'
-#elif os.path.exists('/dev/log'):
-#    address = '/dev/log'
-#else:
-#    address = ('localhost', 514)
-
 ch = logging.handlers.SysLogHandler(
-#        address, 
         facility=logging.handlers.SysLogHandler.LOG_LOCAL0)
 
 ch.setFormatter(formatter)
