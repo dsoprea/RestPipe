@@ -197,12 +197,17 @@ class CommonMessageLoop(object):
                          { 'handler_name': event_handler_name }
 
             with rpipe.stats.time_and_post(timer_name):
-                self.__process_event(
-                    handler,
-                    message_id,
-                    parameters,
-                    message_obj.mimetype,
-                    message_obj.data)
+                try:
+                    self.__process_event(
+                        handler,
+                        message_id,
+                        parameters,
+                        message_obj.mimetype,
+                        message_obj.data)
+                except:
+                    _logger.error("There was an exception while executing "
+                                  "handler: [%s]", event_handler_name)
+                    raise
 
     def __process_event(self, handler, message_id, parameters, mimetype, data):
         """Processes event in a new gthread."""
@@ -220,8 +225,11 @@ class CommonMessageLoop(object):
         try:
             result = handler(self.__ctx, (mimetype, data), *parameters)
         except Exception as e:
-            _logger.exception("Unhandled exception during event: %s", 
-                              e.__class__.__name__)
+            for line in traceback.format_exc().split('\n'):
+                _logger.error("EXCEPTION: " + line)
+
+            _logger.error("Unhandled exception during event [%s]: [%s]", 
+                              e.__class__.__name__, str(e))
 
             result = { 
                 'exception': {
