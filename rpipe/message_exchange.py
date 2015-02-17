@@ -130,10 +130,14 @@ class _MessageExchange(object):
 _instances = {}
 
 def stop_exchange(address):
+    global _instances
+
     _instances[address][0].kill()
     del _instances[address]
 
 def start_exchange(ws, address):
+    global _instances
+
     assert ws is not None
 
     me = _MessageExchange(ws, address)
