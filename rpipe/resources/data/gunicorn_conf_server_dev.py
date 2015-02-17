@@ -4,5 +4,7 @@ daemon = 'false'
 bind = 'unix:/tmp/rpserver.gunicorn.sock'
 
 errorlog = '-'
-loglevel = 'debug'
+loglevel = 'warning'
 worker_class = 'gevent'
+
+timeout = 300
