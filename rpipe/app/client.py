@@ -2,6 +2,7 @@ import sys
 import logging
 import time
 import json
+import datetime
 
 import web
 import gevent
@@ -24,6 +25,8 @@ def connection_cycle():
                                     CONNECTION_STATE_CHANGE_EVENT_CLASS)
 
     sce = state_change_event_cls()
+    retry_attempts = 0
+    last_connection_dt = None
 
     while 1:
         rpipe.stats.post_to_counter(
@@ -49,7 +52,10 @@ def connection_cycle():
             rpipe.stats.post_to_counter(
                 rpipe.config.statsd.EVENT_CONNECTION_CLIENT_CONNECTED_TICK)
 
-            sce.connect_success()
+            sce.connect_success(retry_attempts, last_connection_dt)
+
+            retry_attempts = 0
+            last_connection_dt = datetime.datetime.now()
 
             # Start the local socket-server.
             c.process_requests()
@@ -57,7 +63,7 @@ def connection_cycle():
             _logger.exception("Connection has broken and will be "
                               "reattempted.")
 
-            sce.connect_fail()
+            sce.connect_fail(retry_attempts, last_connection_dt)
 
             rpipe.stats.post_to_counter(
                 rpipe.config.statsd.EVENT_CONNECTION_CLIENT_BROKEN_TICK)
@@ -80,6 +86,8 @@ def connection_cycle():
                              wait_time_s)
 
                 gevent.sleep(wait_time_s)
+
+            retry_attempts += 1
 
 def client_socket_server_killed_cb(g):
 # TODO(dustin): We need to signal the web-server to die, here.
