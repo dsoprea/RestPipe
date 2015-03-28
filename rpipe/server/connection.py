@@ -90,8 +90,21 @@ class _ConnectionCatalog(object):
 
 
 class ServerConnectionHandler(rpipe.connection.Connection):
-    def handle(socket, address):
+    def handle(self, event_handler):
         raise NotImplementedError()
+
+    def start_hook(self):
+        """Called after a connection has been established and before we start 
+        the CML.
+        """
+
+        pass
+
+    def stop_hook(self):
+        """Called after a connection has been closed and the CML has been 
+        stopped."""
+
+        pass
 
 
 class DefaultServerConnectionHandler(ServerConnectionHandler):
@@ -120,29 +133,40 @@ class DefaultServerConnectionHandler(ServerConnectionHandler):
 
         get_connection_catalog().register(self)
 
-        self.handle()
-
-    def handle_close(self):
-        _logger.info("Connection from [%s] closed.", self.__address)
-        get_connection_catalog().deregister(self)
-
-    def handle(self):
         event_handler_cls = rpipe.utility.load_cls_from_string(
                                 rpipe.config.server.EVENT_HANDLER_FQ_CLASS)
 
         assert issubclass(event_handler_cls, ServerEventHandler) is True
 
         eh = event_handler_cls()
+
+        _logger.debug("Calling start-hook: [%s]", self.__address)
+        eh.start_hook()
+        self.handle(eh)
+
+        _logger.debug("Calling stop-hook: [%s]", self.__address)
+        eh.stop_hook()
+
+    def handle_close(self):
+        _logger.info("Connection from [%s] closed.", self.__address)
+        get_connection_catalog().deregister(self)
+
+    def handle(self, event_handler):
         cml = rpipe.message_loop.CommonMessageLoop(
                 self.__ws, 
-                eh, 
+                event_handler, 
                 self.__ctx, 
                 watch_heartbeats=True)
+
+        _logger.debug("Common message-loop running.")
 
         try:
             cml.handle(exit_on_unknown=True)
         finally:
             self.handle_close()
+
+            _logger.warning("Common message-loop ended.")
+
 
     def initiate_message(self, message_obj, **kwargs):
         # This only works because the CommonMessageLoop has already registered 
