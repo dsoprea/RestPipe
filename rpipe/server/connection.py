@@ -107,7 +107,8 @@ class _ConnectionCatalog(object):
         immediately available). This is to be used when we might need to wait 
         for a client to reconnect in order to fulfill a request.
         """
-
+# TODO(dustin): This works great, but we need the same thing on the client side 
+#               (requests on the client need to block until reconnected).
         stop_at = time.time() + timeout_s
         while time.time() <= stop_at:
             try:
@@ -121,6 +122,8 @@ class _ConnectionCatalog(object):
 
 
 class ServerConnectionHandler(rpipe.connection.Connection):
+    """Represents a single client connection."""
+
     def __init__(self, *args, **kwargs):
         super(ServerConnectionHandler, self).__init__(*args, **kwargs)
 
@@ -205,6 +208,8 @@ class ServerConnectionHandler(rpipe.connection.Connection):
 
 
 class Server(rpipe.request_server.RequestServer):
+    """Wait for incoming client-connections."""
+
     def process_requests(self):
         binding = (rpipe.config.server.BIND_IP, 
                    rpipe.config.server.BIND_PORT)
