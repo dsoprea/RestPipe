@@ -20,9 +20,13 @@ _logger = logging.getLogger(__name__)
 web.config.debug = rpipe.config.IS_DEBUG
 
 def connection_cycle():
+    event_class_name = rpipe.config.client.\
+                            CONNECTION_STATE_CHANGE_EVENT_CLASS
+
+    _logger.debug("Client event handler: [%s]", event_class_name)
+
     state_change_event_cls = rpipe.utility.load_cls_from_string(
-                                rpipe.config.client.\
-                                    CONNECTION_STATE_CHANGE_EVENT_CLASS)
+                                event_class_name)
 
     sce = state_change_event_cls()
     retry_attempts = 0

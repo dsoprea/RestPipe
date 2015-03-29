@@ -27,6 +27,11 @@ EVENT_HANDLER_FQ_CLASS = \
         'RP_EVENT_HANDLER_FQ_CLASS',
         'rpipe.server.connection.TestServerEventHandler')
 
+CONNECTION_STATE_CHANGE_EVENT_CLASS = \
+    os.environ.get(
+        'RP_SERVER_CONNECTION_STATE_CHANGE_EVENT_CLASS',
+        'rpipe.state_change_event.ServerStateChangeEvent')
+
 DEFAULT_CONNECTION_WAIT_TIMEOUT_S = 20
 
 CLIENT_HOSTNAME_RESOLVER_CLS = 'rpipe.server.hostname_resolver.HostnameResolverDns'

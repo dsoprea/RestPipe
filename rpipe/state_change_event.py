@@ -16,3 +16,15 @@ class ClientStateChangeEvent(object):
         """
 
         pass
+
+
+class ServerStateChangeEvent(object):
+    def connection_added(self, ip, new_count):
+        """A new connection has been established."""
+
+        pass
+
+    def connection_removed(self, ip, new_count):
+        """A connection has been lost."""
+
+        pass

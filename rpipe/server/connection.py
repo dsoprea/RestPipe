@@ -55,6 +55,15 @@ class _ConnectionCatalog(object):
     def __init__(self):
         self.__connections = {}
 
+        event_class_name = rpipe.config.server.\
+                                CONNECTION_STATE_CHANGE_EVENT_CLASS
+
+        _logger.debug("Server event handler: [%s]", event_class_name)
+
+        cls = rpipe.utility.load_cls_from_string(event_class_name)
+
+        self.__server_events = cls()
+
     def register(self, c):
         # A client might've disconnected and reconnected, and we'll very likely 
         # not notice the broken connection before receiving the new one. 
@@ -90,6 +99,8 @@ class _ConnectionCatalog(object):
         # with a conneciton object -or- an address).
         self.__connections[c] = c
 
+        self.__server_events.connection_added(c.ip, len(self.__connections))
+
     def deregister(self, c):
         if c not in self.__connections:
             raise ValueError("Can not deregister unregistered connection: %s" %
@@ -97,6 +108,8 @@ class _ConnectionCatalog(object):
 
         _logger.debug("Deregistering client: [%s]", c.ip)
         del self.__connections[c]
+
+        self.__server_events.connection_removed(c.ip, len(self.__connections))
 
     def get_connection_by_ip(self, ip):
         return self.__connections[ip]
