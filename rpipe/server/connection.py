@@ -21,7 +21,18 @@ _logger = logging.getLogger(__name__)
 
 
 class ServerEventHandler(object):
-    pass
+    def start_hook(self):
+        """Called after a connection has been established and before we start 
+        the CML.
+        """
+
+        pass
+
+    def stop_hook(self):
+        """Called after a connection has been closed and the CML has been 
+        stopped."""
+
+        pass
 
 
 class TestServerEventHandler(ServerEventHandler):
@@ -43,9 +54,29 @@ class _ConnectionCatalog(object):
         self.__connections = {}
 
     def register(self, c):
-# TODO(dustin): Connections are not being cleaned-up quick enough, and this 
-#               presents reliability problems in multiple different ways.
+        # A client might've disconnected and reconnected, and we'll very likely 
+        # not notice the broken connection before receiving the new one. 
+        # However, since our catalog is keyed by the IP of the client, we could 
+        # replace the old connection with the new one but shoot ourselves in 
+        # the foot by then removing the new connection when we *do* try to 
+        # cleanup the old connection. So, we'll just have to throw an exception 
+        # on the new exception (and, theoretically, all repeated, future 
+        # attempts) until the old connection gets cleaned-up.
+        #
+        # Note that this only works if the client system correctly fails the 
+        # heartbeats, terminates the connection, and tries again (which it 
+        # does).
+
         if c in self.__connections:
+            _logger.error("The incoming connection is redundant and will be "
+                          "closed: [%s]", c)
+
+            try:
+                c.close()
+            except:
+                _logger.exception("We tried to close the redundant connection, "
+                                  "but there was a problem: [%s]", c)
+
             raise ValueError("Can not register already-registered connection. "
                              "A previous connection from this client might "
                              "not've been deregistered [properly]: %s" % 
@@ -90,25 +121,9 @@ class _ConnectionCatalog(object):
 
 
 class ServerConnectionHandler(rpipe.connection.Connection):
-    def handle(self, event_handler):
-        raise NotImplementedError()
+    def __init__(self, *args, **kwargs):
+        super(ServerConnectionHandler, self).__init__(*args, **kwargs)
 
-    def start_hook(self):
-        """Called after a connection has been established and before we start 
-        the CML.
-        """
-
-        pass
-
-    def stop_hook(self):
-        """Called after a connection has been closed and the CML has been 
-        stopped."""
-
-        pass
-
-
-class DefaultServerConnectionHandler(ServerConnectionHandler):
-    def __init__(self):
         self.__ws = None
         self.__address = None
 
@@ -123,6 +138,9 @@ class DefaultServerConnectionHandler(ServerConnectionHandler):
             return False
 
         return hash(self) == hash(o)
+
+    def close(self):
+        self.__ws.close()
 
     def handle_new_connection(self, socket, address):
         """We've received a new connection."""
@@ -187,23 +205,14 @@ class DefaultServerConnectionHandler(ServerConnectionHandler):
 
 
 class Server(rpipe.request_server.RequestServer):
-    def __init__(self):
-        fq_cls_name = rpipe.config.server.CONNECTION_HANDLER_FQ_CLASS
-
-        self.__connection_handler_cls = rpipe.utility.load_cls_from_string(
-                                            fq_cls_name)
-
-        assert issubclass(self.__connection_handler_cls, ServerConnectionHandler)
-
     def process_requests(self):
         binding = (rpipe.config.server.BIND_IP, 
                    rpipe.config.server.BIND_PORT)
 
         _logger.info("Running server: %s", binding)
 
-        handler = self.__connection_handler_cls()
-# TODO(dustin): We need to have a watchdog process, to raise an error if nothing is connected.
-# TODO(dustin): We need to debug what is dying or blocking the flow. Is it StreamServer?
+        handler = ServerConnectionHandler()
+
         server = gevent.server.StreamServer(
                     binding, 
                     handler.handle_new_connection, 
