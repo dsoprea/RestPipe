@@ -1,7 +1,6 @@
 import logging
 
 import web
-import gevent
 
 import rpipe.config
 import rpipe.config.log
@@ -14,7 +13,11 @@ web.config.debug = rpipe.config.IS_DEBUG
 
 # Start the socket-server.
 s = rpipe.server.connection.Server()
-gevent.spawn(s.process_requests)
+s.start()
+
+# TODO(dustin): If we ever want to implement a graceful shutdown process:
+#
+#s.stop()
 
 # Establish the web-server object.
 app = web.application(

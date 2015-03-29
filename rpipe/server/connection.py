@@ -36,6 +36,8 @@ class ServerEventHandler(object):
 
 
 class TestServerEventHandler(ServerEventHandler):
+    """Example server event-handler."""
+
     def get_time(self, ctx, post_data):
         _logger.info("TEST: get_time()")
         return { 'time_from_server': time.time() }
@@ -121,11 +123,11 @@ class _ConnectionCatalog(object):
         raise rpipe.server.exceptions.RpNoConnectionException(ip)
 
 
-class ServerConnectionHandler(rpipe.connection.Connection):
+class _ServerConnectionHandler(rpipe.connection.Connection):
     """Represents a single client connection."""
 
     def __init__(self, *args, **kwargs):
-        super(ServerConnectionHandler, self).__init__(*args, **kwargs)
+        super(_ServerConnectionHandler, self).__init__(*args, **kwargs)
 
         self.__ws = None
         self.__address = None
@@ -188,7 +190,6 @@ class ServerConnectionHandler(rpipe.connection.Connection):
 
             _logger.warning("Common message-loop ended.")
 
-
     def initiate_message(self, message_obj, **kwargs):
         # This only works because the CommonMessageLoop has already registered 
         # the other participant with the MessageExchange.
@@ -206,9 +207,26 @@ class ServerConnectionHandler(rpipe.connection.Connection):
     def ip(self):
         return self.__address[0]
 
+_cc = _ConnectionCatalog()
+
+def get_connection_catalog():
+    return _cc
+
 
 class Server(rpipe.request_server.RequestServer):
-    """Wait for incoming client-connections."""
+    """Wait for incoming client-connections. This is forked at the top of the 
+    application.
+    """
+
+    def __init__(self):
+        self.__g = None
+
+    def start(self):
+        self.__g = gevent.spawn(self.process_requests)
+
+    def stop(self):
+        self.__g.kill()
+        self.__g.join()
 
     def process_requests(self):
         binding = (rpipe.config.server.BIND_IP, 
@@ -216,7 +234,7 @@ class Server(rpipe.request_server.RequestServer):
 
         _logger.info("Running server: %s", binding)
 
-        handler = ServerConnectionHandler()
+        handler = _ServerConnectionHandler()
 
         server = gevent.server.StreamServer(
                     binding, 
@@ -232,8 +250,3 @@ class Server(rpipe.request_server.RequestServer):
         # Since there is no cleanup and everything is based on coroutines, 
         # default CTRL+BREAK and SIGTERM handling should be fine.
         server.serve_forever()
-
-_cc = _ConnectionCatalog()
-
-def get_connection_catalog():
-    return _cc

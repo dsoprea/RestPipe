@@ -1,4 +1,4 @@
-class StateChangeEvent(object):
+class ClientStateChangeEvent(object):
     def connect_success(self, retry_attempts, last_connection_dt):
         """Invoked after a connection is established.
         

@@ -30,8 +30,8 @@ EVENT_HANDLER_FQ_CLASS = \
 
 CONNECTION_STATE_CHANGE_EVENT_CLASS = \
     os.environ.get(
-        'RP_CONNECTION_STATE_CHANGE_EVENT_CLASS',
-        'rpipe.state_change_event.StateChangeEvent') or None
+        'RP_CLIENT_CONNECTION_STATE_CHANGE_EVENT_CLASS',
+        'rpipe.state_change_event.ClientStateChangeEvent') or None
 
 # We deal in terms of seconds, and we need to make sure to give the other side 
 # enough time to clean-up the old connection.
