@@ -4,6 +4,7 @@ import logging
 import os.path
 import time
 import socket
+import datetime
 
 import gevent
 import gevent.server
@@ -64,6 +65,45 @@ class _ConnectionCatalog(object):
 
         self.__server_events = cls()
 
+        self.__monitor_running = False
+        self.__monitor_g = None
+
+        self.__start_monitor()
+
+    def __start_monitor(self):
+        assert self.__monitor_running is False, \
+               "The monitor is already running."
+
+        _logger.info("Starting idleness monitor.")
+
+        self.__monitor_running = True
+
+        self.__monitor_g = gevent.spawn(self.__idleness_monitor)
+
+    def __stop_monitor(self):
+        if self.__monitor_running is False:
+            return
+
+        _logger.info("Stopping idleness monitor.")
+
+        self.__monitor_running = False
+
+        self.__monitor_g.kill()
+        self.__monitor_g.join()
+
+    def __idleness_monitor(self):
+        """This runs while we're not hosting any connections."""
+
+        waiting_since_dt = datetime.datetime.now()
+
+        while 1:
+            duration_s = (datetime.datetime.now() - 
+                          waiting_since_dt).total_seconds()
+
+            self.__server_events.idle(waiting_since_dt, duration_s)
+
+            gevent.sleep(60)
+
     def register(self, c):
         # A client might've disconnected and reconnected, and we'll very likely 
         # not notice the broken connection before receiving the new one. 
@@ -99,6 +139,8 @@ class _ConnectionCatalog(object):
         # with a conneciton object -or- an address).
         self.__connections[c] = c
 
+        self.__stop_monitor()
+
         self.__server_events.connection_added(c.ip, len(self.__connections))
 
     def deregister(self, c):
@@ -110,6 +152,9 @@ class _ConnectionCatalog(object):
         del self.__connections[c]
 
         self.__server_events.connection_removed(c.ip, len(self.__connections))
+
+        if not self.__connections:
+            self.__start_monitor()
 
     def get_connection_by_ip(self, ip):
         return self.__connections[ip]

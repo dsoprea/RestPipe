@@ -19,6 +19,11 @@ class ClientStateChangeEvent(object):
 
 
 class ServerStateChangeEvent(object):
+    def idle(self, waiting_since_dt, duration_s):
+        """Triggered every minute while no connections are present."""
+
+        pass
+
     def connection_added(self, ip, new_count):
         """A new connection has been established."""
 
