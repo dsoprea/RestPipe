@@ -10,6 +10,7 @@ import gevent.ssl
 
 import rpipe.config.client
 import rpipe.config.statsd
+import rpipe.config.heartbeat
 
 import rpipe.exceptions
 import rpipe.protocol
@@ -24,6 +25,10 @@ _logger = logging.getLogger(__name__)
 
 
 class ClientEventHandler(object):
+    pass
+
+
+class HeartbeatTimeoutError(Exception):
     pass
 
 
@@ -77,6 +82,8 @@ class _ClientConnectionHandler(
         except gevent.socket.error:
             raise rpipe.exceptions.RpConnectionFail(str(gevent.socket.error))
 
+        ss.settimeout(rpipe.config.protocol.WRITE_TIMEOUT_S)
+
         self.__ws = rpipe.protocol.SocketWrapper(ss, ss.makefile())
         self.__connected = True
 
@@ -106,10 +113,10 @@ class _ClientConnectionHandler(
 
     def __schedule_heartbeat(self):
         _logger.debug("Scheduling heartbeat: (%d) seconds", 
-                      rpipe.config.client.HEARTBEAT_INTERVAL_S)
+                      rpipe.config.heartbeat.HEARTBEAT_INTERVAL_S)
 
         g = gevent.spawn_later(
-                rpipe.config.client.HEARTBEAT_INTERVAL_S,
+                rpipe.config.heartbeat.HEARTBEAT_INTERVAL_S,
                 self.__send_heartbeat)
 
         def heartbeat_die_cb(hb_g):
@@ -125,13 +132,18 @@ class _ClientConnectionHandler(
 
         with rpipe.stats.time_and_post(
                 rpipe.config.statsd.EVENT_CONNECTION_CLIENT_HEARTBEAT_TIMING):
-            self.initiate_message(self.__heartbeat_msg)
+            try:
+                self.initiate_message(
+                    self.__heartbeat_msg,
+                    rpipe.config.heartbeat.HEARTBEAT_TIMEOUT_S)
+            except rpipe.message_exchange.ResponseTimeoutError:
+                raise HeartbeatTimeoutError()
 
         _logger.debug("Heartbeat response received.")
 
         self.__schedule_heartbeat()
 
-    def initiate_message(self, message_obj, **kwargs):
+    def initiate_message(self, message_obj, timeout_s=None):
         # This only works because the CommonMessageLoop has already been 
         # started and has registered the other participant with the 
         # MessageExchange.
@@ -143,7 +155,8 @@ class _ClientConnectionHandler(
                 rpipe.config.statsd.EVENT_CONNECTION_SEND_TIMING):
             return rpipe.message_exchange.send_and_receive(
                     self.__binding, 
-                    message_obj)
+                    message_obj,
+                    timeout_s=timeout_s)
 
     def process_requests(self):
         assert self.__ws is not None

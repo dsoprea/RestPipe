@@ -1,6 +1,7 @@
 import os
-import os.path
 import sys
+
+import rpipe.config.heartbeat
 
 USER_CONFIG_MODULE_NAME = os.environ.get('RP_CLIENT_USER_CONFIG_MODULE', '')
 
@@ -19,7 +20,6 @@ KEY_FILEPATH = os.path.join(_CERT_PATH, _KEY_FILENAME)
 CRT_FILEPATH = os.path.join(_CERT_PATH, _CRT_FILENAME)
 
 DEFAULT_READ_CHUNK_LENGTH = 1024
-HEARTBEAT_INTERVAL_S = int(os.environ.get('RP_CLIENT_HEARTBEAT_INTERVAL_S', '5'))
 MAX_CONNECT_ATTEMPTS = 0
 RECONNECT_DELAY_S = 5
 

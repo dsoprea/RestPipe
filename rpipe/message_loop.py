@@ -11,6 +11,8 @@ import gevent
 import rpipe.config.protocol
 import rpipe.config.statsd
 import rpipe.config.client
+import rpipe.config.heartbeat
+
 import rpipe.protocol
 import rpipe.protocols
 import rpipe.exceptions
@@ -54,7 +56,7 @@ class CommonMessageLoop(object):
     def __watch_heartbeats(self, parent_g):
         """Make sure that heartbeats are happening on this connection."""
 
-        alarm_threshold_s = rpipe.config.client.HEARTBEAT_INTERVAL_S * 2
+        alarm_threshold_s = rpipe.config.heartbeat.HEARTBEAT_INTERVAL_S * 2
 
         _logger.debug("Starting heartbeat watchdog: ALARM_THRESHOLD=(%d)s", 
                       alarm_threshold_s)

@@ -102,20 +102,3 @@ app = web.application(
             rpipe.config.client_web.URLS, 
             globals(), 
             autoreload=rpipe.config.IS_DEBUG)
-
-#def handle_wrap(handler):
-#    if web.ctx.env.get('CONTENT_TYPE') == 'application/json':
-#        web.ctx.json = json.loads(web.data())
-#
-#    try:
-#        result = handler()
-#    except Exception as e:
-#        raise
-#
-#    if issubclass(result.__class__, (basestring, types.GeneratorType)) is True:
-#        return result
-#    else:
-#        web.header('Content-type', 'application/json')
-#        return json.dumps(result)
-#
-#app.add_processor(handle_wrap)

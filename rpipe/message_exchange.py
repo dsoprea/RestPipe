@@ -12,6 +12,10 @@ import rpipe.protocol
 _logger = logging.getLogger(__name__)
 
 
+class ResponseTimeoutError(Exception):
+    pass
+
+
 class _MessageExchange(object):
     """This runs for a particular socket in its own gthread."""
 
@@ -111,13 +115,13 @@ class _MessageExchange(object):
     def read(self, **kwargs):
         return self.__incoming.get(**kwargs)
 
-    def wait_on_reply(self, message_id, **kwargs):
+    def wait_on_reply(self, message_id, timeout_s=None):
         r = self.__replied[message_id]
-        if r[0].wait(**kwargs) is True:
+        if r[0].wait(timeout_s) is True:
             del self.__replied[message_id]
             return r[1]
 
-        return None
+        raise ResponseTimeoutError()
 
 #    @property
 #    def incoming(self):
@@ -158,12 +162,12 @@ def send(address, message_obj, **kwargs):
 def wait_on_reply(address, message_id, **kwargs):
     return _instances[address][1].wait_on_reply(message_id, **kwargs)
 
-def send_and_receive(address, message_obj):
+def send_and_receive(address, message_obj, timeout_s=None):
     """A convenience function to send a message and wait on a reply."""
 
     message_id = send(address, message_obj, expect_response=True)
-    message = wait_on_reply(address, message_id)
 
+    message = wait_on_reply(address, message_id, timeout_s=timeout_s)
     (message_info, message_obj) = message
 
     return message_obj
