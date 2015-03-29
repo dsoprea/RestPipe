@@ -4,7 +4,7 @@ import web
 
 import rpipe.config.web_server
 import rpipe.event
-import rpipe.client.connection
+import rpipe.client_connection
 
 _logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ class EventClient(object):
         _logger.info("Client received request, to be sent to server: [%s] "
                      "[%s]", verb, noun)
 
-        c = rpipe.client.connection.get_connection()
+        c = rpipe.client_connection.get_connection()
         mimetype = web.ctx.env.get('CONTENT_TYPE')
 
         r = rpipe.event.emit(c, verb, noun, web.data(), mimetype)

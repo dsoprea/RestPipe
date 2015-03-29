@@ -12,7 +12,7 @@ import rpipe.config.client_web
 import rpipe.config.statsd
 import rpipe.stats
 import rpipe.exceptions
-import rpipe.client.connection
+import rpipe.client_connection
 import rpipe.utility
 
 _logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ def connection_cycle():
                         rpipe.config.statsd.\
                             EVENT_CONNECTION_CLIENT_HEARTBEAT_FAIL_TICK):
                 last_attempt = time.time()
-                c = rpipe.client.connection.get_connection()
+                c = rpipe.client_connection.get_connection()
 
             rpipe.stats.post_to_counter(
                 rpipe.config.statsd.EVENT_CONNECTION_CLIENT_CONNECTED_TICK)
