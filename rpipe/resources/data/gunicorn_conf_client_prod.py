@@ -4,7 +4,7 @@ user = 'www-data'
 group = 'www-data'
 
 debug = 'false'
-daemon = 'true'
+daemon = 'false'
 
 bind = 'unix:/tmp/rpclient.gunicorn.sock'
 
