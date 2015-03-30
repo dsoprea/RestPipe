@@ -38,7 +38,7 @@ def connection_cycle():
 
         # If we get disconnected, we'll continually reconnect.
         try:
-            _logger.info("Reattempting connection to server.")
+            _logger.info("Attempting connection to server.")
 
             # Establish a connection to the server.
             with rpipe.stats.time_and_post(
@@ -64,8 +64,8 @@ def connection_cycle():
             # Start the local socket-server.
             c.process_requests()
         except rpipe.exceptions.RpConnectionRetry:
-            _logger.exception("Connection has broken and will be "
-                              "reattempted.")
+            _logger.exception("Connection has broken or a reattempt has been "
+                              "unsuccessful.")
 
             if retry_attempts == 0:
                 last_disconnected_dt = datetime.datetime.now()
