@@ -30,7 +30,7 @@ def connection_cycle():
 
     sce = state_change_event_cls()
     retry_attempts = 0
-    last_connection_dt = None
+    last_disconnected_dt = None
 
     while 1:
         rpipe.stats.post_to_counter(
@@ -56,10 +56,10 @@ def connection_cycle():
             rpipe.stats.post_to_counter(
                 rpipe.config.statsd.EVENT_CONNECTION_CLIENT_CONNECTED_TICK)
 
-            sce.connect_success(retry_attempts, last_connection_dt)
+            sce.connect_success(retry_attempts, last_disconnected_dt)
 
             retry_attempts = 0
-            last_connection_dt = datetime.datetime.now()
+            last_disconnected_dt = None
 
             # Start the local socket-server.
             c.process_requests()
@@ -67,7 +67,10 @@ def connection_cycle():
             _logger.exception("Connection has broken and will be "
                               "reattempted.")
 
-            sce.connect_fail(retry_attempts, last_connection_dt)
+            if retry_attempts == 0:
+                last_disconnected_dt = datetime.datetime.now()
+
+            sce.connect_fail(retry_attempts, last_disconnected_dt)
 
             rpipe.stats.post_to_counter(
                 rpipe.config.statsd.EVENT_CONNECTION_CLIENT_BROKEN_TICK)

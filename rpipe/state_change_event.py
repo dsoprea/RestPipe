@@ -1,5 +1,5 @@
 class ClientStateChangeEvent(object):
-    def connect_success(self, retry_attempts, last_connection_dt):
+    def connect_success(self, retry_attempts, last_disconnected_dt):
         """Invoked after a connection is established.
         
         `retry_attempts` reflects how many failures we encountered before this
@@ -8,7 +8,7 @@ class ClientStateChangeEvent(object):
 
         pass
 
-    def connect_fail(self, retry_attempts, last_connection_dt):
+    def connect_fail(self, retry_attempts, last_disconnected_dt):
         """Invoked after a connection fails or is broken.
 
         `retry_attempts` reflects how many failures we've encountered before we 
