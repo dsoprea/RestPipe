@@ -1,5 +1,7 @@
-import os.path
-
+#
+# Copyright (C) 2015 OpenPeak Inc.
+# All rights reserved
+#
 user = 'www-data'
 group = 'www-data'
 
@@ -8,7 +10,7 @@ daemon = 'true'
 
 bind = 'unix:/tmp/rpclient.gunicorn.sock'
 
-errorlog = os.path.join('/var/log/restpipe.log')
+errorlog = '-'
 loglevel = 'warning'
 worker_class = 'gevent'
 

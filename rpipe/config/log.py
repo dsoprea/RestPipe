@@ -1,27 +1,36 @@
-import sys
 import os
-import os.path
 import logging
 import logging.handlers
 
-logger = logging.getLogger()
+def _configure_logs():
+    logger = logging.getLogger()
 
-is_debug = bool(int(os.environ.get('DEBUG', '0')))
+    is_debug = bool(int(os.environ.get('DEBUG', '0')))
 
-if is_debug is True:
-    logger.setLevel(logging.DEBUG)
-else:
-    logger.setLevel(logging.INFO)
+    if is_debug is True:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
 
-format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-formatter = logging.Formatter(format)
+    # Configure screen.
 
-ch = logging.StreamHandler()
-ch.setFormatter(formatter)
-logger.addHandler(ch)
+    format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    formatter = logging.Formatter(format)
 
-ch = logging.handlers.SysLogHandler(
-        facility=logging.handlers.SysLogHandler.LOG_LOCAL0)
+    sh = logging.StreamHandler()
+    sh.setFormatter(formatter)
+    logger.addHandler(sh)
 
-ch.setFormatter(formatter)
-logger.addHandler(ch)
+    # Configure Syslog.
+
+    format = '%(name)s - %(levelname)s - %(message)s'
+    formatter = logging.Formatter(format)
+
+    sh2 = logging.handlers.SysLogHandler(
+            address='/dev/log',
+            facility=logging.handlers.SysLogHandler.LOG_LOCAL1)
+
+    sh2.setFormatter(formatter)
+    logger.addHandler(sh2)
+
+_configure_logs()
