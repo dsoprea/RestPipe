@@ -22,15 +22,15 @@ def _configure_logs():
     logger.addHandler(sh)
 
     # Configure Syslog.
+    if os.path.exists('/dev/log') is True:
+        format = '%(name)s - %(levelname)s - %(message)s'
+        formatter = logging.Formatter(format)
 
-    format = '%(name)s - %(levelname)s - %(message)s'
-    formatter = logging.Formatter(format)
+        sh2 = logging.handlers.SysLogHandler(
+                address='/dev/log',
+                facility=logging.handlers.SysLogHandler.LOG_LOCAL1)
 
-    sh2 = logging.handlers.SysLogHandler(
-            address='/dev/log',
-            facility=logging.handlers.SysLogHandler.LOG_LOCAL1)
-
-    sh2.setFormatter(formatter)
-    logger.addHandler(sh2)
+        sh2.setFormatter(formatter)
+        logger.addHandler(sh2)
 
 _configure_logs()
