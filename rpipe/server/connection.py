@@ -243,6 +243,9 @@ class _ServerConnectionHandler(rpipe.connection.Connection):
 
         try:
             cml.handle(exit_on_unknown=True)
+        except:
+            _logger.exception("There was a problem while handling a request.")
+            raise
         finally:
             self.handle_close()
 
