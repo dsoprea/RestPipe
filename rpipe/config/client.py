@@ -26,7 +26,7 @@ RECONNECT_DELAY_S = 5
 EVENT_HANDLER_FQ_CLASS = \
     os.environ.get(
         'RP_EVENT_HANDLER_FQ_CLASS',
-        'rpipe.client_connection.TestClientEventHandler')
+        'rpipe.client.connection.TestClientEventHandler')
 
 CONNECTION_STATE_CHANGE_EVENT_CLASS = \
     os.environ.get(

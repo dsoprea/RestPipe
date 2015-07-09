@@ -90,6 +90,9 @@ class _ClientConnectionHandler(
         _logger.debug("Scheduling heartbeat.")
         self.__schedule_heartbeat()
 
+# TODO(dustin): Do startup tasks (such as sending a list of events that we're 
+#               interested in receiving).
+
     def close(self):
         _logger.info("Closing connection.")
 
