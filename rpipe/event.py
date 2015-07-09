@@ -6,7 +6,7 @@ import rpipe.connection
 
 _logger = logging.getLogger(__name__)
 
-def emit(c, verb, noun, data, mimetype=None):
+def send_message_to_remote(c, verb, noun, data, mimetype=None):
     assert issubclass(c.__class__, rpipe.connection.Connection)
 
     if mimetype is None:
