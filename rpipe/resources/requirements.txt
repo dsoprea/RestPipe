@@ -1,5 +1,5 @@
 M2Crypto==0.22.3
-gevent==1.0.2
+gevent==23.9.1
 greenlet==0.4.2
 gunicorn
 protobuf==2.5.0
